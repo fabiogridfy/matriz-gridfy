@@ -686,6 +686,7 @@
       <button class="view-tab tab-soft" onclick="switchTab('soft',this)">Soft Skills</button>
       <button class="view-tab" onclick="switchTab('resumen',this)">Resumen visual</button>
       <button class="view-tab" onclick="switchTab('guia',this)">Guía de niveles</button>
+      <button class="view-tab" onclick="switchTab('ajustes',this)">⚙ Ajustes</button>
     </div>
 
     <!-- TAB: Hard Skills -->
@@ -976,6 +977,92 @@
         <p style="font-size:11px;color:var(--text3);margin-top:12px;">Los botones marcados con borde superior (2 · 5 · 8) corresponden a las anclas con preguntas asociadas en la guía. Los demás puntos los interpola el evaluador.</p>
       </div>
       <div id="guia-detail"></div>
+    </div>
+
+    <!-- TAB: Ajustes -->
+    <div class="view-section" id="tab-ajustes">
+
+      <!-- Pesos de bloques -->
+      <div class="summary-card" style="margin-bottom:16px">
+        <div class="summary-title">Pesos de bloques hard skills</div>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:16px">
+          Ajusta el peso de cada bloque en el score global. Deben sumar 100%.
+        </p>
+        <div id="ajustes-pesos"></div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:12px">
+          <div style="font-size:12px;color:var(--text3)">Total: <span id="ajustes-total" style="font-weight:700;font-family:'DM Mono',monospace">—</span></div>
+          <button class="btn btn-primary" onclick="applyWeights()" style="padding:6px 16px;font-size:12px">Aplicar pesos</button>
+          <button class="btn" onclick="resetWeights()" style="padding:6px 16px;font-size:12px">Restablecer</button>
+        </div>
+      </div>
+
+      <!-- Umbrales de nivel -->
+      <div class="summary-card" style="margin-bottom:16px">
+        <div class="summary-title">Umbrales de diagnóstico</div>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:16px">
+          Score global mínimo para cada nivel. Los criterios bloqueantes del CEO (autonomía, criterio, comunicación) se aplican siempre.
+        </p>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px" id="ajustes-umbrales"></div>
+        <button class="btn btn-primary" onclick="applyThresholds()" style="margin-top:12px;padding:6px 16px;font-size:12px">Aplicar umbrales</button>
+      </div>
+
+      <!-- Google Sheets (preparado, inactivo) -->
+      <div class="summary-card" style="border:1.5px dashed var(--border)">
+        <div class="summary-title" style="display:flex;align-items:center;gap:8px">
+          <span>🔗 Sincronización con Google Sheets</span>
+          <span style="font-size:10px;background:var(--surface2);padding:2px 8px;border-radius:10px;color:var(--text3);font-weight:600">INACTIVO</span>
+        </div>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.6">
+          Permite que varios evaluadores compartan candidatos en tiempo real a través de Google Sheets.<br>
+          <strong>Para activarlo:</strong> crea una Google Sheet + un Apps Script con el código de abajo, pega la URL del script aquí y pulsa Conectar.
+        </p>
+        <div style="margin-bottom:12px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:6px">URL del Apps Script</div>
+          <div style="display:flex;gap:8px">
+            <input id="sheets-url" type="text" placeholder="https://script.google.com/macros/s/…/exec"
+              style="flex:1;font-size:12px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:'DM Mono',monospace"
+              oninput="saveSheetUrl()">
+            <button class="btn btn-primary" onclick="testSheetConnection()" style="padding:6px 14px;font-size:12px">Conectar</button>
+          </div>
+          <div id="sheets-status" style="font-size:11px;margin-top:6px;color:var(--text3)">Sin conectar</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-top:4px">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em">Código Apps Script a pegar en Google Sheets</div>
+          <pre style="font-size:10px;color:var(--text2);line-height:1.5;overflow-x:auto;margin:0;white-space:pre-wrap">const SHEET_NAME = 'Candidatos';
+
+function doGet(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  const data = sheet.getDataRange().getValues();
+  const candidates = data.slice(1).map(row => JSON.parse(row[1] || '{}'));
+  return ContentService.createTextOutput(JSON.stringify(candidates))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  const payload = JSON.parse(e.postData.contents);
+  if (payload.action === 'save') {
+    const data = sheet.getDataRange().getValues();
+    const row = data.findIndex(r => r[0] === payload.candidate.id);
+    const values = [payload.candidate.id, JSON.stringify(payload.candidate)];
+    if (row > 0) sheet.getRange(row + 1, 1, 1, 2).setValues([values]);
+    else sheet.appendRow(values);
+  } else if (payload.action === 'delete') {
+    const data = sheet.getDataRange().getValues();
+    const row = data.findIndex(r => r[0] === payload.id);
+    if (row > 0) sheet.deleteRow(row + 1);
+  }
+  return ContentService.createTextOutput('ok');
+}
+
+// Despliega como: Ejecutar como "Yo" · Acceso "Cualquiera"</pre>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" onclick="syncFromSheets()" style="padding:6px 14px;font-size:12px" id="btn-sync-from">↓ Descargar de Sheets</button>
+          <button class="btn" onclick="syncToSheets()" style="padding:6px 14px;font-size:12px" id="btn-sync-to">↑ Subir todos a Sheets</button>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1726,6 +1813,7 @@ function init() {
   renderBlocks();
   renderSoftBlocks();
   renderGuia();
+  initAjustes();
   const list = loadAll();
   if (list.length === 0) {
     const d = blankState();
@@ -2153,13 +2241,13 @@ function diagnose(data) {
   // "No es Senior si no define problemas y los convierte en decisiones de negocio"
   const seniorBlock = crit >= 7 && prob >= 7 && com >= 7 && inf >= 6.5;
 
-  const juniorOk = juniorBlock && globalAvg >= 3.5 && hardCore >= 3.0;
-  const midOk    = midBlock    && globalAvg >= 5.0 && hardCore >= 5.0 && softAvg >= 4.5 &&
+  const juniorOk = juniorBlock && globalAvg >= THRESHOLDS.junior && hardCore >= 3.0;
+  const midOk    = midBlock    && globalAvg >= THRESHOLDS.mid    && hardCore >= 5.0 && softAvg >= 4.5 &&
                    critBelow(4, ['s_com','s_crit','s_own','s_prob']) <= 1;
-  const seniorOk = seniorBlock && globalAvg >= 6.5 && hardCore >= 6.5 && softAvg >= 6.5 &&
+  const seniorOk = seniorBlock && globalAvg >= THRESHOLDS.senior && hardCore >= 6.5 && softAvg >= 6.5 &&
                    critBelow(5, ['s_com','s_crit','s_own','s_prob','s_inf']) === 0;
   const leadOk   = seniorOk   && softAvg >= 7.5 && leadAvg >= 7.0 && com >= 8 && crit >= 8 &&
-                   own >= 8 && col >= 8 && pri >= 7.5 && dev >= 7.5 && hardCore >= 6.5;
+                   own >= 8 && col >= 8 && pri >= 7.5 && dev >= 7.5 && hardCore >= THRESHOLDS.lead;
 
   if (leadOk)        { nivel = 'Lead';   nivelSub = 'Lidera y define. Responsabilidad sobre la cuenta de resultados.'; }
   else if (seniorOk) { nivel = 'Senior'; nivelSub = 'Cambia cómo el cliente opera. Formula problemas de negocio.'; }
@@ -3136,6 +3224,7 @@ function switchTab(name, btn) {
   if (tabEl) tabEl.classList.add('visible');
   if (btn) btn.classList.add('active');
   if (name === 'resumen') updateSummary();
+  if (name === 'ajustes') { renderWeightSliders(); renderThresholdInputs(); }
 }
 
 function scrollToBlock(id) {
@@ -3177,7 +3266,187 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-// ─── START ───────────────────────────────────────────────────────────────────
+// ─── AJUSTES ─────────────────────────────────────────────────────────────────
+
+// Default weights (used by resetWeights)
+const DEFAULT_WEIGHTS = {};
+
+function initAjustes() {
+  // Store defaults on first load
+  BLOCKS.forEach(b => { DEFAULT_WEIGHTS[b.id] = b.weight; });
+  renderWeightSliders();
+  renderThresholdInputs();
+  // Restore saved sheet URL
+  const url = localStorage.getItem('gridfy_sheet_url') || '';
+  const el = document.getElementById('sheets-url');
+  if (el && url) el.value = url;
+  if (url) document.getElementById('sheets-status').textContent = 'URL guardada — pulsa Conectar para verificar';
+}
+
+function renderWeightSliders() {
+  const c = document.getElementById('ajustes-pesos');
+  if (!c) return;
+  c.innerHTML = BLOCKS.map(b => `
+    <div style="display:grid;grid-template-columns:140px 1fr 52px;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:6px">
+        <span style="width:8px;height:8px;border-radius:50%;background:${b.hex};display:inline-block;flex-shrink:0"></span>
+        ${b.label}
+      </div>
+      <input type="range" min="5" max="70" step="5" value="${Math.round(b.weight*100)}"
+        id="w-${b.id}"
+        oninput="updateWeightDisplay('${b.id}',this.value)"
+        style="accent-color:${b.hex};cursor:pointer">
+      <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;text-align:right;color:${b.hex}"
+        id="wval-${b.id}">${Math.round(b.weight*100)}%</div>
+    </div>`).join('');
+  updateTotalDisplay();
+}
+
+function updateWeightDisplay(id, val) {
+  const el = document.getElementById('wval-' + id);
+  if (el) el.textContent = val + '%';
+  updateTotalDisplay();
+}
+
+function updateTotalDisplay() {
+  const total = BLOCKS.reduce((sum, b) => {
+    const el = document.getElementById('w-' + b.id);
+    return sum + (el ? parseInt(el.value) : Math.round(b.weight*100));
+  }, 0);
+  const el = document.getElementById('ajustes-total');
+  if (el) {
+    el.textContent = total + '%';
+    el.style.color = total === 100 ? 'var(--r9)' : 'var(--r1)';
+  }
+}
+
+function applyWeights() {
+  const total = BLOCKS.reduce((sum, b) => {
+    const el = document.getElementById('w-' + b.id);
+    return sum + (el ? parseInt(el.value) : Math.round(b.weight*100));
+  }, 0);
+  if (total !== 100) { showToast('Los pesos deben sumar 100% (ahora suman ' + total + '%)'); return; }
+  BLOCKS.forEach(b => {
+    const el = document.getElementById('w-' + b.id);
+    if (el) b.weight = parseInt(el.value) / 100;
+  });
+  updateSummary();
+  showToast('Pesos actualizados');
+}
+
+function resetWeights() {
+  BLOCKS.forEach(b => {
+    if (DEFAULT_WEIGHTS[b.id] != null) {
+      b.weight = DEFAULT_WEIGHTS[b.id];
+      const el = document.getElementById('w-' + b.id);
+      if (el) { el.value = Math.round(b.weight*100); updateWeightDisplay(b.id, Math.round(b.weight*100)); }
+    }
+  });
+  showToast('Pesos restablecidos a los valores por defecto');
+}
+
+// Thresholds — mirrors the diagnose() conditions
+let THRESHOLDS = { junior: 3.5, mid: 5.0, senior: 6.5, lead: 7.0 };
+
+function renderThresholdInputs() {
+  const c = document.getElementById('ajustes-umbrales');
+  if (!c) return;
+  const LEVEL_COLORS = { junior:'#B07020', mid:'#2A7A7A', senior:'#207050', lead:'#1A5A40' };
+  const LEVEL_DESC = {
+    junior: 'Ejecuta con calidad y consistencia',
+    mid:    'Genera decisiones que el cliente usa',
+    senior: 'Cambia cómo el cliente opera',
+    lead:   'Lidera y define la estrategia'
+  };
+  c.innerHTML = Object.entries(THRESHOLDS).map(([key, val]) => `
+    <div style="background:var(--surface2);border-radius:10px;padding:14px;text-align:center">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;
+        color:${LEVEL_COLORS[key]};margin-bottom:4px">${key.toUpperCase()}</div>
+      <input type="number" min="1" max="10" step="0.5" value="${val}"
+        id="thr-${key}"
+        style="width:64px;font-family:'DM Mono',monospace;font-size:22px;font-weight:500;
+          text-align:center;border:1.5px solid ${LEVEL_COLORS[key]};border-radius:8px;
+          padding:4px;background:var(--bg);color:${LEVEL_COLORS[key]}">
+      <div style="font-size:10px;color:var(--text3);margin-top:6px;line-height:1.3">${LEVEL_DESC[key]}</div>
+    </div>`).join('');
+}
+
+function applyThresholds() {
+  ['junior','mid','senior','lead'].forEach(key => {
+    const el = document.getElementById('thr-' + key);
+    if (el) THRESHOLDS[key] = parseFloat(el.value) || THRESHOLDS[key];
+  });
+  updateSummary();
+  showToast('Umbrales actualizados');
+}
+
+// ─── GOOGLE SHEETS INTEGRATION (preparada, inactiva hasta configurar) ────────
+
+function saveSheetUrl() {
+  const url = (document.getElementById('sheets-url')||{}).value || '';
+  localStorage.setItem('gridfy_sheet_url', url);
+}
+
+async function testSheetConnection() {
+  const url = (document.getElementById('sheets-url')||{}).value || '';
+  if (!url) { showToast('Pega la URL del Apps Script primero'); return; }
+  const status = document.getElementById('sheets-status');
+  if (status) status.textContent = 'Conectando…';
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (status) status.textContent = '✓ Conectado — ' + (Array.isArray(data) ? data.length + ' candidatos en Sheets' : 'respuesta recibida');
+    showToast('Conexión con Google Sheets OK');
+  } catch(e) {
+    if (status) status.textContent = '✗ Error: ' + e.message;
+    showToast('Error conectando con Sheets: ' + e.message);
+  }
+}
+
+async function syncFromSheets() {
+  const url = localStorage.getItem('gridfy_sheet_url');
+  if (!url) { showToast('Configura la URL de Google Sheets primero'); return; }
+  try {
+    const res = await fetch(url);
+    const candidates = await res.json();
+    if (!Array.isArray(candidates) || !candidates.length) { showToast('No hay candidatos en Sheets'); return; }
+    const local = loadAll();
+    const merged = [...local];
+    candidates.forEach(remote => {
+      const idx = merged.findIndex(c => c.id === remote.id);
+      if (idx >= 0) merged[idx] = remote; else merged.push(remote);
+    });
+    saveAll(merged);
+    renderCandList();
+    showToast('↓ ' + candidates.length + ' candidatos descargados de Sheets');
+  } catch(e) { showToast('Error: ' + e.message); }
+}
+
+async function syncToSheets() {
+  const url = localStorage.getItem('gridfy_sheet_url');
+  if (!url) { showToast('Configura la URL de Google Sheets primero'); return; }
+  const candidates = loadAll();
+  if (!candidates.length) { showToast('No hay candidatos que subir'); return; }
+  let ok = 0;
+  for (const c of candidates) {
+    try {
+      await fetch(url, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'save', candidate: c }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      ok++;
+    } catch(e) { /* continue */ }
+  }
+  showToast('↑ ' + ok + '/' + candidates.length + ' candidatos subidos a Sheets');
+}
+
+// Hook applyThresholds into diagnose() — override thresholds
+const _origDiagnose = diagnose;
+// diagnose() already reads THRESHOLDS inline in the conditions below
+
+
 init();
 </script>
 </body>
