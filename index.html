@@ -1,0 +1,3184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matriz de Evaluación · Consulting</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Epilogue:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #F5F3EE;
+    --surface: #FDFCF9;
+    --surface2: #F0EDE6;
+    --border: rgba(60,50,30,0.12);
+    --border-strong: rgba(60,50,30,0.25);
+    --text: #1A1612;
+    --text2: #6B5F4E;
+    --text3: #9C8E7A;
+    --accent: #2C4A3E;
+    --accent2: #D4622A;
+    --accent-light: #E8F0EC;
+    --data-color: #2C5F8A;
+    --data-bg: #EBF2F9;
+    --elec-color: #2A7A56;
+    --elec-bg: #E8F5EE;
+    --norm-color: #B5580E;
+    --norm-bg: #FBF0E6;
+    --mgmt-color: #5A3E8C;
+    --mgmt-bg: #F0EBFB;
+    --sector-color: #1A6B7A;
+    --sector-bg: #E4F3F5;
+    --secreg-color: #8A4A1A;
+    --secreg-bg: #F5EEE8;
+    --soft-color: #7A3E6B;
+    --soft-bg: #F5EBF3;
+    --lead-color: #3E5A8C;
+    --lead-bg: #EBF0F9;
+    --r1: #C94040; --r1b: #FBE8E8;
+    --r2: #C96030; --r2b: #FBF0E8;
+    --r3: #B07020; --r3b: #FBF3E3;
+    --r4: #8A8010; --r4b: #F9F5E0;
+    --r5: #4A9020; --r5b: #EEF7E5;
+    --r6: #2A9050; --r6b: #E4F5EC;
+    --r7: #2A7A7A; --r7b: #E2F3F3;
+    --r8: #2A5FA0; --r8b: #E3ECF9;
+    --r9: #207050; --r9b: #E4F3EC;
+    --r10:#1A5A40; --r10b:#DCF0E6;
+    --radius: 10px;
+    --radius-lg: 16px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 15px; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Epilogue', sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* Layout */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 240px; flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh;
+    overflow-y: auto;
+  }
+  .main { flex: 1; overflow-x: hidden; }
+
+  /* Sidebar */
+  .sidebar-header {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 15px;
+    color: var(--text);
+    letter-spacing: 0.01em;
+    line-height: 1.3;
+  }
+  .sidebar-logo span { color: var(--accent2); font-style: italic; }
+  .sidebar-subtitle { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; font-weight: 500; }
+  .nav-section { padding: 12px 12px 8px; }
+  .nav-label { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; padding: 0 8px; margin-bottom: 4px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px; border-radius: 8px;
+    cursor: pointer; font-size: 13px; color: var(--text2);
+    transition: background 0.15s, color 0.15s;
+    border: none; background: none; width: 100%; text-align: left;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--accent-light); color: var(--accent); font-weight: 500; }
+  .nav-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .nav-score {
+    margin-left: auto; font-size: 11px; font-family: 'DM Mono', monospace;
+    background: var(--surface2); padding: 1px 6px; border-radius: 4px; color: var(--text3);
+  }
+  .sidebar-candidates { padding: 12px; border-top: 1px solid var(--border); margin-top: auto; }
+  .cand-list { max-height: 180px; overflow-y: auto; margin-top: 6px; }
+  .cand-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 12px;
+    color: var(--text2); transition: background 0.12s;
+  }
+  .cand-item:hover { background: var(--surface2); }
+  .cand-item.active { background: var(--accent-light); color: var(--accent); font-weight: 500; }
+  .cand-del { font-size: 14px; color: var(--text3); line-height: 1; cursor: pointer; padding: 0 2px; }
+  .cand-del:hover { color: var(--r1); }
+  .btn-new-cand {
+    width: 100%; margin-top: 8px;
+    padding: 7px; border-radius: 8px; font-size: 12px;
+    border: 1px dashed var(--border-strong); background: none;
+    color: var(--text2); cursor: pointer; font-family: 'Epilogue', sans-serif;
+    transition: background 0.12s, color 0.12s;
+  }
+  .btn-new-cand:hover { background: var(--surface2); color: var(--text); }
+
+  /* Top bar */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .topbar-title { font-family: 'DM Serif Display', serif; font-size: 18px; }
+  .topbar-actions { display: flex; gap: 8px; }
+  .btn {
+    padding: 7px 16px; border-radius: 8px; font-size: 12px; font-weight: 500;
+    cursor: pointer; font-family: 'Epilogue', sans-serif; transition: all 0.15s;
+    border: 1px solid var(--border-strong); background: none; color: var(--text2);
+  }
+  .btn:hover { background: var(--surface2); color: var(--text); }
+  .btn-primary {
+    background: var(--accent); color: #fff; border-color: var(--accent);
+  }
+  .btn-primary:hover { background: #1e3629; }
+  .btn-danger { border-color: var(--r1); color: var(--r1); }
+  .btn-danger:hover { background: var(--r1b); }
+
+  /* Content */
+  .content { padding: 32px; max-width: 860px; }
+
+  /* Meta grid */
+  .meta-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .meta-card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 13px; color: var(--text2); margin-bottom: 16px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .field-group { display: flex; flex-direction: column; gap: 4px; }
+  .field-label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; }
+  .field-input {
+    padding: 8px 10px; border-radius: 8px; font-size: 13px;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--text); font-family: 'Epilogue', sans-serif;
+    transition: border-color 0.15s;
+  }
+  .field-input:focus { outline: none; border-color: var(--accent); }
+  select.field-input { cursor: pointer; }
+
+  /* Blocks */
+  .block-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .block-header {
+    padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .block-header-left { display: flex; align-items: center; gap: 12px; }
+  .block-accent { width: 3px; height: 32px; border-radius: 2px; flex-shrink: 0; }
+  .block-title { font-family: 'DM Serif Display', serif; font-size: 17px; }
+  .block-weight {
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 3px 9px; border-radius: 20px;
+  }
+  .block-score-display {
+    font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 500;
+    min-width: 60px; text-align: right;
+  }
+
+  /* Skill rows */
+  .skill-item { border-top: 1px solid var(--border); }
+  .skill-main {
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 16px; padding: 16px 24px; align-items: start;
+  }
+  .skill-left {}
+  .skill-name { font-weight: 500; font-size: 14px; margin-bottom: 2px; }
+  .skill-desc { font-size: 12px; color: var(--text3); line-height: 1.4; }
+  .skill-right { display: flex; align-items: center; gap: 8px; }
+  .score-display {
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    color: var(--text3); min-width: 28px; text-align: right;
+  }
+  .guide-btn {
+    font-size: 11px; color: var(--text3); background: none; border: 1px solid var(--border);
+    border-radius: 6px; padding: 3px 8px; cursor: pointer; font-family: 'Epilogue', sans-serif;
+    transition: all 0.12s; white-space: nowrap;
+  }
+  .guide-btn:hover { background: var(--surface2); color: var(--text); }
+
+  /* Stars — 10 point scale */
+  .stars { display: flex; gap: 3px; }
+  .star-btn {
+    width: 28px; height: 28px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--bg);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 600; color: var(--text3);
+    font-family: 'DM Mono', monospace;
+    transition: all 0.12s;
+  }
+  .star-btn:hover { border-color: var(--border-strong); background: var(--surface2); }
+  .star-btn.s1.on  { background: var(--r1b);  border-color: var(--r1);  color: var(--r1);  }
+  .star-btn.s2.on  { background: var(--r2b);  border-color: var(--r2);  color: var(--r2);  }
+  .star-btn.s3.on  { background: var(--r3b);  border-color: var(--r3);  color: var(--r3);  }
+  .star-btn.s4.on  { background: var(--r4b);  border-color: var(--r4);  color: var(--r4);  }
+  .star-btn.s5.on  { background: var(--r5b);  border-color: var(--r5);  color: var(--r5);  }
+  .star-btn.s6.on  { background: var(--r6b);  border-color: var(--r6);  color: var(--r6);  }
+  .star-btn.s7.on  { background: var(--r7b);  border-color: var(--r7);  color: var(--r7);  }
+  .star-btn.s8.on  { background: var(--r8b);  border-color: var(--r8);  color: var(--r8);  }
+  .star-btn.s9.on  { background: var(--r9b);  border-color: var(--r9);  color: var(--r9);  }
+  .star-btn.s10.on { background: var(--r10b); border-color: var(--r10); color: var(--r10); }
+  /* Anchor markers: 2, 5, 8 have a subtle top border to signal they are guide points */
+  .star-btn.anchor { border-top: 2.5px solid var(--border-strong); }
+
+  /* Soft / Lead section separator */
+  .section-divider {
+    display: flex; align-items: center; gap: 14px;
+    margin: 28px 0 16px;
+  }
+  .section-divider-line { flex: 1; height: 1px; background: var(--border); }
+  .section-divider-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--text3); white-space: nowrap;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .section-divider-badge {
+    font-size: 9px; padding: 2px 7px; border-radius: 10px; font-weight: 600;
+    background: var(--surface2); color: var(--text3); letter-spacing: 0.05em;
+  }
+  /* Soft tab active state */
+  .tab-soft.active { background: var(--surface); color: var(--soft-color); }
+  .tab-lead.active { background: var(--surface); color: var(--lead-color); }
+
+  /* Diagnosis section */
+  .diag-section { margin-top: 16px; }
+  .diag-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+  .diag-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 16px 18px;
+    box-shadow: var(--shadow);
+  }
+  .diag-card-label { font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text3); margin-bottom: 8px; }
+  .diag-card-value { font-family: 'DM Serif Display', serif; font-size: 22px; line-height: 1.2; margin-bottom: 4px; }
+  .diag-card-sub { font-size: 11px; color: var(--text3); line-height: 1.4; }
+  .diag-avg-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+  .diag-avg-cell {
+    background: var(--surface2); border-radius: var(--border-radius-md);
+    padding: 10px 12px; text-align: center;
+  }
+  .diag-avg-label { font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text3); margin-bottom: 4px; }
+  .diag-avg-val { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500; }
+  .diag-lists { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .diag-list-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--border-radius-md); padding: 12px 14px;
+  }
+  .diag-list-title { font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; margin-bottom: 8px; }
+  .diag-list-item { display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+  .diag-list-item:last-child { border-bottom: none; }
+  .diag-rec-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 16px 20px;
+    box-shadow: var(--shadow);
+  }
+  .diag-rec-label { font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text3); margin-bottom: 8px; }
+  .diag-rec-text { font-size: 14px; line-height: 1.6; color: var(--text); }
+
+  /* Guide panel */
+  .guide-panel {
+    margin: 0 24px 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .guide-panel-header {
+    padding: 10px 14px;
+    background: var(--surface2);
+    font-size: 11px; font-weight: 600;
+    color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border);
+  }
+  .guide-levels { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .guide-levels.cols-5 { grid-template-columns: repeat(5, 1fr); }
+  .guide-level {
+    padding: 14px 12px; border-right: 1px solid var(--border);
+    transition: background 0.12s;
+  }
+  .guide-level:last-child { border-right: none; }
+  .guide-level.active { background: var(--surface); }
+  .guide-level-num {
+    font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500;
+    margin-bottom: 2px; line-height: 1;
+  }
+  .guide-level-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .guide-level-range { font-size: 9px; color: var(--text3); font-family: 'DM Mono',monospace; margin-bottom: 10px; }
+  .guide-level-q { margin-top: 6px; }
+  /* Question blocks */
+  .guide-q-block { margin-bottom: 10px; }
+  .guide-q-type { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 3px; }
+  .guide-q-text { font-size: 11px; color: var(--text); line-height: 1.45; font-weight: 500; margin-bottom: 6px; }
+  /* Collapsible answer boxes */
+  .guide-ans-toggle {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; padding: 2px 8px; border-radius: 4px;
+    cursor: pointer; border: 1px solid; margin-right: 4px; margin-bottom: 4px;
+    background: none; font-family: 'Epilogue', sans-serif; font-weight: 500;
+    transition: opacity 0.12s;
+  }
+  .guide-ans-toggle:hover { opacity: 0.75; }
+  .guide-ans-toggle.ok  { color: var(--r9);  border-color: var(--r9b);  }
+  .guide-ans-toggle.bad { color: var(--r1);  border-color: var(--r1b);  }
+  .guide-ans-box {
+    display: none; margin-top: 4px; padding: 8px 10px;
+    border-radius: 6px; font-size: 11px; line-height: 1.45;
+    border-left: 3px solid; margin-bottom: 6px;
+  }
+  .guide-ans-box.ok  { background: var(--r9b);  border-color: var(--r9);  color: #1A4030; }
+  .guide-ans-box.bad { background: var(--r1b);  border-color: var(--r1);  color: #6B1515; }
+  .guide-ans-box.visible { display: block; }
+  /* Scoring hint */
+  .guide-score-hint {
+    font-size: 10px; color: var(--text3); margin-top: 8px; padding-top: 8px;
+    border-top: 1px dashed var(--border); line-height: 1.4; font-style: italic;
+  }
+
+  /* Summary panel */
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+  }
+  .summary-title { font-family: 'DM Serif Display', serif; font-size: 15px; margin-bottom: 16px; color: var(--text2); }
+  .score-hero {
+    display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px;
+  }
+  .score-hero-num {
+    font-family: 'DM Serif Display', serif; font-size: 52px; color: var(--text);
+    line-height: 1;
+  }
+  .score-hero-nivel {
+    font-size: 13px; font-weight: 500; padding: 5px 14px;
+    border-radius: 20px; line-height: 1.3;
+  }
+  .block-scores { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+  .block-metric {
+    padding: 10px 12px; border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .block-metric-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .block-metric-val { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; }
+  .block-metric-weight { font-size: 10px; color: var(--text3); margin-top: 2px; }
+  .charts-row { display: grid; grid-template-columns: 200px 1fr; gap: 20px; align-items: center; }
+  .radar-wrap { width: 200px; height: 200px; }
+  .bars-wrap { flex: 1; }
+  .bar-row { margin-bottom: 8px; }
+  .bar-meta { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px; }
+  .bar-name { color: var(--text2); max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-val { font-family: 'DM Mono', monospace; font-weight: 500; color: var(--text); }
+  .bar-track { height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.35s ease; }
+
+  /* Qualitative */
+  .qual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .qual-box {
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; background: var(--bg);
+  }
+  .qual-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 8px; }
+  .qual-textarea {
+    width: 100%; border: none; background: none; font-family: 'Epilogue', sans-serif;
+    font-size: 13px; color: var(--text); resize: none; outline: none;
+    min-height: 60px; line-height: 1.5;
+  }
+  .qual-select {
+    width: 100%; padding: 6px 8px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface);
+    font-family: 'Epilogue', sans-serif; font-size: 13px; color: var(--text);
+    cursor: pointer;
+  }
+  .nivel-scale {
+    display: grid; grid-template-columns: repeat(5,1fr); gap: 6px; margin-top: 12px;
+    padding: 12px; background: var(--bg); border-radius: 10px; border: 1px solid var(--border);
+  }
+  .nivel-cell { text-align: center; }
+  .nivel-range { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; margin-bottom: 2px; }
+  .nivel-lbl { font-size: 10px; font-weight: 600; }
+  .nivel-desc { font-size: 10px; color: var(--text3); margin-top: 2px; line-height: 1.3; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--accent); color: #fff;
+    padding: 10px 18px; border-radius: 10px;
+    font-size: 13px; font-weight: 500;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none; z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface); border-radius: var(--radius-lg);
+    padding: 24px; max-width: 480px; width: 92%;
+    border: 1px solid var(--border); box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    transform: translateY(10px); transition: transform 0.2s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal h3 { font-family: 'DM Serif Display', serif; font-size: 18px; margin-bottom: 8px; }
+  .modal p { font-size: 13px; color: var(--text2); margin-bottom: 16px; line-height: 1.5; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* Tabs */
+  .view-tabs { display: flex; gap: 2px; background: var(--surface2); border-radius: 10px; padding: 3px; width: fit-content; margin-bottom: 20px; }
+  .view-tab {
+    padding: 6px 16px; border-radius: 8px; font-size: 12px; font-weight: 500;
+    cursor: pointer; color: var(--text2); border: none; background: none;
+    font-family: 'Epilogue', sans-serif; transition: all 0.12s;
+  }
+  .view-tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+  .view-section { display: none; }
+  .view-section.visible { display: block; }
+
+  /* ── Resumen visual ── */
+  .rs-top-row { display: grid; grid-template-columns: 260px 1fr; gap: 16px; margin-bottom: 16px; }
+  .rs-hero-card { display: flex; flex-direction: column; align-items: center; padding: 28px 20px; gap: 12px; }
+  .rs-radar-card { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+  .rs-card-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 14px; align-self: flex-start; }
+
+  .rs-candidate-chip {
+    font-size: 12px; font-weight: 500; color: var(--text2);
+    background: var(--surface2); border-radius: 20px; padding: 4px 12px;
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  /* Dial SVG */
+  .rs-dial-wrap { position: relative; }
+  .rs-dial-track { stroke: var(--surface2); }
+  .rs-dial-fill { stroke: var(--accent); transition: stroke-dasharray 0.7s cubic-bezier(.4,0,.2,1); }
+  .rs-dial-num {
+    font-family: 'DM Serif Display', serif; font-size: 30px;
+    fill: var(--text); dominant-baseline: auto;
+  }
+  .rs-dial-max { font-size: 11px; fill: var(--text3); font-family: 'DM Mono', monospace; }
+
+  .rs-nivel-badge {
+    font-size: 12px; font-weight: 600; padding: 5px 16px; border-radius: 20px;
+    text-align: center; min-height: 28px; line-height: 1.4;
+  }
+
+  /* Progress to next level */
+  .rs-progress-wrap { width: 100%; }
+  .rs-progress-label { display: flex; justify-content: space-between; font-size: 10px; color: var(--text3); margin-bottom: 5px; font-weight: 500; }
+  .rs-progress-track { height: 4px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .rs-progress-fill { height: 100%; border-radius: 3px; background: var(--accent); transition: width 0.6s ease; }
+
+  /* Meta row inside hero */
+  .rs-meta-row { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+  .rs-meta-item { display: flex; justify-content: space-between; font-size: 11px; padding: 4px 0; border-top: 1px solid var(--border); }
+  .rs-meta-key { color: var(--text3); font-weight: 500; }
+  .rs-meta-val { color: var(--text); font-weight: 500; }
+
+  /* Block breakdown bars */
+  .rs-block-section { margin-bottom: 20px; }
+  .rs-block-section:last-child { margin-bottom: 0; }
+  .rs-block-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  .rs-block-name {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em;
+  }
+  .rs-block-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .rs-block-score-pill {
+    font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500;
+    padding: 3px 12px; border-radius: 20px; border: 1px solid transparent;
+  }
+  .rs-skill-row { display: grid; grid-template-columns: 1fr 180px 36px; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .rs-skill-name { font-size: 12px; color: var(--text2); line-height: 1.3; }
+  .rs-skill-track { height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; position: relative; }
+  .rs-skill-fill { height: 100%; border-radius: 4px; transition: width 0.5s cubic-bezier(.4,0,.2,1); }
+  .rs-skill-ticks {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; pointer-events: none;
+  }
+  .rs-skill-tick { flex: 1; border-right: 1px solid rgba(255,255,255,0.35); }
+  .rs-skill-tick:last-child { border-right: none; }
+  .rs-skill-val { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; text-align: right; color: var(--text3); }
+
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .meta-grid { grid-template-columns: 1fr 1fr; }
+    .block-scores { grid-template-columns: 1fr 1fr; }
+    .charts-row { grid-template-columns: 1fr; }
+    .qual-grid { grid-template-columns: 1fr; }
+    .guide-levels { grid-template-columns: 1fr 1fr; }
+    .guide-level:nth-child(2) { border-right: none; }
+    .guide-level:nth-child(even) { border-right: none; }
+    .content { padding: 16px; }
+    .topbar { padding: 12px 16px; }
+    .nivel-scale { grid-template-columns: 1fr 1fr; }
+    .rs-top-row { grid-template-columns: 1fr; }
+    .rs-skill-row { grid-template-columns: 1fr 120px 36px; }
+  }
+
+  /* Profile comparison */
+  .perfil-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:13px; font-weight:600; padding:4px 12px 4px 8px;
+    border-radius:20px; border:1.5px solid; margin-bottom:4px;
+  }
+  .perfil-emoji { font-size:16px; }
+  .rol-selector-wrap {
+    display:flex; align-items:center; gap:10px;
+    padding:14px 18px; background:var(--surface);
+    border:1px solid var(--border); border-radius:var(--radius-lg);
+    margin-bottom:16px; box-shadow:var(--shadow);
+  }
+  .rol-selector-label { font-size:11px; font-weight:700; text-transform:uppercase;
+    letter-spacing:0.1em; color:var(--text3); white-space:nowrap; }
+  .rol-selector { font-family:'Epilogue',sans-serif; font-size:13px;
+    border:1px solid var(--border); border-radius:8px; padding:6px 10px;
+    background:var(--bg); color:var(--text); cursor:pointer; flex:1; }
+  .comparativa-wrap { margin-top:16px; }
+  .comparativa-row {
+    display:grid; grid-template-columns:160px 1fr 48px;
+    align-items:center; gap:10px; margin-bottom:8px;
+  }
+  .comparativa-label { font-size:12px; color:var(--text2); text-align:right; }
+  .comparativa-bar-track {
+    height:8px; background:var(--surface2); border-radius:4px; overflow:hidden;
+    position:relative;
+  }
+  .comparativa-bar-fill {
+    height:100%; border-radius:4px; transition:width 0.4s;
+  }
+  .comparativa-bar-min {
+    position:absolute; top:0; height:100%; width:2px;
+    background:rgba(0,0,0,0.2); border-radius:1px;
+  }
+  .comparativa-val { font-family:'DM Mono',monospace; font-size:11px;
+    font-weight:600; text-align:right; }
+  .comparativa-status {
+    font-size:10px; font-weight:700; padding:1px 6px; border-radius:6px;
+    white-space:nowrap;
+  }
+  .encaje-card {
+    border-radius:var(--radius-lg); padding:14px 18px; margin-top:14px;
+    border:1.5px solid; box-shadow:var(--shadow);
+  }
+  .encaje-title { font-size:11px; font-weight:700; text-transform:uppercase;
+    letter-spacing:0.1em; margin-bottom:6px; }
+  .encaje-text { font-size:13px; line-height:1.6; }
+
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">Matriz<br><span>Consulting</span></div>
+    <div class="sidebar-subtitle">Evaluación de talento</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Secciones</div>
+    <button class="nav-item active" onclick="switchTab('hard',this)">
+      <span class="nav-dot" style="background:var(--accent)"></span>
+      Hard Skills
+    </button>
+    <button class="nav-item" onclick="switchTab('soft',this)">
+      <span class="nav-dot" style="background:var(--soft-color)"></span>
+      Soft Skills
+    </button>
+    <button class="nav-item" onclick="switchTab('resumen',this)">
+      <span class="nav-dot" style="background:var(--accent2)"></span>
+      Resumen visual
+    </button>
+    <button class="nav-item" onclick="switchTab('guia',this)">
+      <span class="nav-dot" style="background:var(--text3)"></span>
+      Guía de niveles
+    </button>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Bloques</div>
+    <div id="block-nav-list">
+    <button class="nav-item" onclick="scrollToBlock('data')">
+      <span class="nav-dot" style="background:var(--data-color)"></span>
+      Data
+      <span class="nav-score" id="nav-data">—</span>
+    </button>
+    <button class="nav-item" onclick="scrollToBlock('elec')">
+      <span class="nav-dot" style="background:var(--elec-color)"></span>
+      Electricidad
+      <span class="nav-score" id="nav-elec">—</span>
+    </button>
+    <button class="nav-item" onclick="scrollToBlock('secreg')">
+      <span class="nav-dot" style="background:var(--secreg-color)"></span>
+      Sector & Reg.
+      <span class="nav-score" id="nav-secreg">—</span>
+    </button>
+    <button class="nav-item" onclick="scrollToBlock('mgmt')">
+      <span class="nav-dot" style="background:var(--mgmt-color)"></span>
+      Management
+      <span class="nav-score" id="nav-mgmt">—</span>
+    </button>
+    </div>
+  </div>
+  <div class="sidebar-candidates">
+    <div class="nav-label">Candidatos guardados</div>
+    <div class="cand-list" id="cand-list"></div>
+    <button class="btn-new-cand" onclick="newCandidate()">+ Nuevo candidato</button>
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbar-title">Evaluación</div>
+    <div class="topbar-actions">
+      <button class="btn" onclick="importJSON()">Importar JSON</button>
+      <button class="btn" onclick="exportJSON()">Exportar JSON</button>
+      <button class="btn" onclick="exportTXT()">Exportar texto</button>
+      <label class="btn" title="Cargar matriz_datos.xlsx para actualizar preguntas y pesos" style="cursor:pointer">
+        📂 Cargar Excel
+        <input type="file" id="file-excel" accept=".xlsx" style="display:none" onchange="loadExcel(event)">
+      </label>
+      <button class="btn btn-primary" onclick="saveCandidate()">Guardar</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="view-tabs">
+      <button class="view-tab active" onclick="switchTab('hard',this)">Hard Skills</button>
+      <button class="view-tab tab-soft" onclick="switchTab('soft',this)">Soft Skills</button>
+      <button class="view-tab" onclick="switchTab('resumen',this)">Resumen visual</button>
+      <button class="view-tab" onclick="switchTab('guia',this)">Guía de niveles</button>
+    </div>
+
+    <!-- TAB: Hard Skills -->
+    <div class="view-section visible" id="tab-hard">
+      <div style="background:linear-gradient(135deg,#1A3A4A,#2C5F8A);border-radius:var(--radius-lg);padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px">
+        <div style="font-size:22px">⚡</div>
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:rgba(255,255,255,0.6);margin-bottom:3px">Estándar transversal Gridfy</div>
+          <div style="font-size:13px;font-weight:500;color:#fff;line-height:1.4">Excelencia basada en datos orientada a la decisión del cliente.<br>
+            <span style="font-size:11px;opacity:0.75">Junior → contribuye al análisis &nbsp;·&nbsp; Mid → genera decisiones que el cliente usa &nbsp;·&nbsp; Senior → cambia cómo el cliente opera</span>
+          </div>
+        </div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-card-title">Datos del candidato</div>
+        <div class="meta-grid">
+          <div class="field-group">
+            <div class="field-label">Nombre</div>
+            <input class="field-input" type="text" id="f-nombre" placeholder="Nombre completo" oninput="autoSaveMeta()">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Contexto</div>
+            <select class="field-input" id="f-contexto" onchange="autoSaveMeta()">
+              <option value="">Seleccionar…</option>
+              <option>Entrevista inicial</option>
+              <option>Entrevista técnica</option>
+              <option>Caso práctico</option>
+              <option>Revisión CV</option>
+              <option>Autoevaluación</option>
+              <option>Evaluación interna</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Nivel objetivo</div>
+            <select class="field-input" id="f-nivel-obj" onchange="autoSaveMeta()">
+              <option value="">Seleccionar…</option>
+              <option>Junior</option>
+              <option>Mid</option>
+              <option>Senior</option>
+              <option>Lead</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Evaluador</div>
+            <input class="field-input" type="text" id="f-evaluador" placeholder="Quién evalúa" oninput="autoSaveMeta()">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Fecha</div>
+            <input class="field-input" type="date" id="f-fecha" onchange="autoSaveMeta()">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Rol buscado</div>
+            <select class="field-input" id="f-rol-buscado" onchange="autoSaveMeta()">
+              <option value="">Seleccionar…</option>
+              <option>Analista / Técnico especialista</option>
+              <option>Consultor técnico-negocio</option>
+              <option>Consultor orientado a cliente</option>
+              <option>Project / Delivery Lead</option>
+              <option>Perfil en formación</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Confianza evaluación</div>
+            <select class="field-input" id="f-confianza" onchange="autoSaveMeta()">
+              <option value="">Seleccionar…</option>
+              <option>Baja</option>
+              <option>Media</option>
+              <option>Alta</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div id="blocks-container"></div>
+    </div>
+
+    <!-- TAB: Soft Skills -->
+    <div class="view-section" id="tab-soft">
+
+      <!-- Candidate meta (read-only summary) -->
+      <div class="meta-card" style="margin-bottom:16px">
+        <div class="meta-card-title">Soft Skills & Consulting Mindset</div>
+        <p style="font-size:12px;color:var(--text3);margin:0">
+          Evalúa las skills consultivas. Misma escala 1–10 con anclas en 2/5/8.
+          El bloque <strong>Leadership</strong> es opcional — evalúalo solo si el candidato aspira a Senior alto o Lead.
+        </p>
+      </div>
+
+      <!-- Soft blocks rendered here -->
+      <div id="soft-blocks-container"></div>
+
+      <!-- Leadership separator -->
+      <div class="section-divider">
+        <div class="section-divider-line"></div>
+        <div class="section-divider-label">
+          Leadership
+          <span class="section-divider-badge">Opcional · Solo Senior / Lead</span>
+        </div>
+        <div class="section-divider-line"></div>
+      </div>
+
+      <div id="lead-blocks-container"></div>
+    </div>
+
+    <!-- TAB: Resumen -->
+    <div class="view-section" id="tab-resumen">
+
+      <!-- Row 1: hero + radar -->
+      <div class="rs-top-row">
+
+        <!-- Score hero card -->
+        <div class="summary-card rs-hero-card">
+          <div class="rs-candidate-chip" id="rs-chip"></div>
+          <div class="rs-dial-wrap">
+            <svg id="rs-dial-svg" viewBox="0 0 160 160" width="160" height="160" aria-label="Score circular">
+              <circle cx="80" cy="80" r="62" fill="none" stroke-width="10" class="rs-dial-track"/>
+              <circle cx="80" cy="80" r="62" fill="none" stroke-width="10" class="rs-dial-fill" id="rs-dial-fill"
+                stroke-dasharray="0 389" stroke-dashoffset="97.5" stroke-linecap="round"/>
+              <text x="80" y="76" text-anchor="middle" class="rs-dial-num" id="rs-dial-num">—</text>
+              <text x="80" y="96" text-anchor="middle" class="rs-dial-max">/ 10</text>
+            </svg>
+          </div>
+          <div class="rs-nivel-badge" id="rs-nivel-badge"></div>
+          <div class="rs-progress-wrap" id="rs-progress-wrap"></div>
+          <div class="rs-meta-row" id="rs-meta-row"></div>
+        </div>
+
+        <!-- Radar card -->
+        <div class="summary-card rs-radar-card">
+          <div class="rs-card-label">Perfil por bloque</div>
+          <canvas id="radarCanvas" role="img" aria-label="Radar de scores por bloque" style="max-width:100%;max-height:260px">Scores por bloque.</canvas>
+        </div>
+
+      </div>
+
+      <!-- Row 2: block breakdown bars -->
+      <div class="summary-card">
+        <div class="rs-card-label">Desglose por skill</div>
+        <div id="rs-block-bars"></div>
+      </div>
+
+      <!-- Row 3: notas -->
+      <div class="summary-card">
+        <div class="rs-card-label">Notas y recomendación</div>
+        <div class="qual-grid">
+          <div class="qual-box">
+            <div class="qual-label">Fortalezas principales</div>
+            <textarea class="qual-textarea" id="q-fortalezas" placeholder="¿Qué destaca positivamente?" oninput="autoSaveMeta()"></textarea>
+          </div>
+          <div class="qual-box">
+            <div class="qual-label">Áreas de mejora / gaps</div>
+            <textarea class="qual-textarea" id="q-mejora" placeholder="¿Dónde hay brechas o falta madurez?" oninput="autoSaveMeta()"></textarea>
+          </div>
+          <div class="qual-box">
+            <div class="qual-label">Observaciones generales</div>
+            <textarea class="qual-textarea" id="q-obs" placeholder="Notas de entrevista, contexto, dudas…" oninput="autoSaveMeta()"></textarea>
+          </div>
+          <div class="qual-box">
+            <div class="qual-label">Recomendación final</div>
+            <select class="qual-select" id="q-rec" onchange="autoSaveMeta()">
+              <option value="">Seleccionar…</option>
+              <option>No apto</option>
+              <option>Junior</option>
+              <option>Mid</option>
+              <option>Senior</option>
+              <option>Potencial Lead</option>
+              <option>Dudas / revisar</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- DIAGNOSIS SECTION -->
+      <div class="diag-section" id="diag-section">
+        <div class="rs-card-label" style="margin-bottom:14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3)">
+          Diagnóstico automático
+        </div>
+
+        <!-- Row 1: Nivel / Perfil del candidato / Riesgo -->
+        <div class="diag-grid" id="diag-cards">
+          <div class="diag-card">
+            <div class="diag-card-label">Nivel estimado</div>
+            <div class="diag-card-value" id="diag-nivel">—</div>
+            <div class="diag-card-sub" id="diag-nivel-sub"></div>
+          </div>
+          <div class="diag-card">
+            <div class="diag-card-label">Perfil del candidato</div>
+            <div id="diag-perfil-badge"></div>
+            <div class="diag-card-sub" id="diag-perfil-sub" style="margin-top:4px"></div>
+          </div>
+          <div class="diag-card">
+            <div class="diag-card-label">Riesgo de contratación</div>
+            <div class="diag-card-value" id="diag-riesgo">—</div>
+            <div class="diag-card-sub" id="diag-riesgo-sub"></div>
+          </div>
+        </div>
+
+        <!-- Row 2: Avg metrics -->
+        <div class="diag-avg-row">
+          <div class="diag-avg-cell">
+            <div class="diag-avg-label">Hard avg</div>
+            <div class="diag-avg-val" id="diag-hard-avg" style="color:var(--data-color)">—</div>
+          </div>
+          <div class="diag-avg-cell">
+            <div class="diag-avg-label">Soft avg</div>
+            <div class="diag-avg-val" id="diag-soft-avg" style="color:var(--soft-color)">—</div>
+          </div>
+          <div class="diag-avg-cell">
+            <div class="diag-avg-label">Leadership avg</div>
+            <div class="diag-avg-val" id="diag-lead-avg" style="color:var(--lead-color)">—</div>
+          </div>
+        </div>
+
+        <!-- Row 3: Comparativa con rol buscado -->
+        <div class="summary-card" style="margin-bottom:16px" id="diag-comparativa-card">
+          <div class="rs-card-label" style="margin-bottom:12px">Comparativa con rol buscado</div>
+          <div class="rol-selector-wrap">
+            <span class="rol-selector-label">Rol buscado</span>
+            <select class="rol-selector" id="diag-rol-select" onchange="onRolChange()">
+              <option value="">Seleccionar rol…</option>
+              <option>Analista / Técnico especialista</option>
+              <option>Consultor técnico-negocio</option>
+              <option>Consultor orientado a cliente</option>
+              <option>Project / Delivery Lead</option>
+              <option>Perfil en formación</option>
+            </select>
+          </div>
+          <div id="diag-comparativa-body">
+            <p style="font-size:12px;color:var(--text3);text-align:center;padding:12px 0">
+              Selecciona un rol para ver la comparativa
+            </p>
+          </div>
+        </div>
+
+        <!-- Row 4: Fortalezas + Gaps -->
+        <div class="diag-lists">
+          <div class="diag-list-box">
+            <div class="diag-list-title" style="color:var(--r9)">↑ Top fortalezas</div>
+            <div id="diag-fortalezas"></div>
+          </div>
+          <div class="diag-list-box">
+            <div class="diag-list-title" style="color:var(--r1)">↓ Gaps para el rol</div>
+            <div id="diag-gaps"></div>
+          </div>
+        </div>
+
+        <!-- Row 5: Recomendación -->
+        <div class="diag-rec-box">
+          <div class="diag-rec-label">Recomendación automática</div>
+          <div class="diag-rec-text" id="diag-rec-text">Puntúa las skills para generar el diagnóstico.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB: Guía -->
+    <div class="view-section" id="tab-guia">
+      <div class="summary-card">
+        <div class="summary-title">Escala de niveles</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">Cada skill se puntúa del <strong>1 al 10</strong>. La guía de preguntas tiene <strong>anclas en los puntos 2, 5 y 8</strong> — los demás puntos son interpolación libre del evaluador.</p>
+        <div class="nivel-scale" style="grid-template-columns:repeat(5,1fr)">
+          <div class="nivel-cell">
+            <div class="nivel-range" style="color:var(--r1)">1–2</div>
+            <div class="nivel-lbl" style="color:var(--r1)">Muy bajo / Básico</div>
+            <div class="nivel-desc">Definición y reconocimiento. ¿Sabe qué es esto? ¿Lo ha visto?</div>
+          </div>
+          <div class="nivel-cell">
+            <div class="nivel-range" style="color:var(--r3)">3–4</div>
+            <div class="nivel-lbl" style="color:var(--r3)">Inicial</div>
+            <div class="nivel-desc">Nociones aplicadas. Puede seguir casos simples con apoyo.</div>
+          </div>
+          <div class="nivel-cell">
+            <div class="nivel-range" style="color:var(--r5)">5–6</div>
+            <div class="nivel-lbl" style="color:var(--r5)">Sólido</div>
+            <div class="nivel-desc">Aplicación y criterio. Resuelve casos reales con autonomía razonable.</div>
+          </div>
+          <div class="nivel-cell">
+            <div class="nivel-range" style="color:var(--r8)">7–8</div>
+            <div class="nivel-lbl" style="color:var(--r8)">Avanzado</div>
+            <div class="nivel-desc">Diseño y trade-offs. Gestiona complejidad y toma posición.</div>
+          </div>
+          <div class="nivel-cell">
+            <div class="nivel-range" style="color:var(--r10)">9–10</div>
+            <div class="nivel-lbl" style="color:var(--r10)">Excelente</div>
+            <div class="nivel-desc">Criterio experto. Visión propia, detecta lo que está roto.</div>
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--text3);margin-top:12px;">Los botones marcados con borde superior (2 · 5 · 8) corresponden a las anclas con preguntas asociadas en la guía. Los demás puntos los interpola el evaluador.</p>
+      </div>
+      <div id="guia-detail"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Modal confirm -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3 id="modal-title">¿Confirmar acción?</h3>
+    <p id="modal-body">Esta acción no se puede deshacer.</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-danger" id="modal-confirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="file-import" accept=".json" style="display:none" onchange="handleImport(event)">
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+
+// ─── SOFT SKILLS ─────────────────────────────────────────────────────────────
+const SOFT_BLOCKS = [
+  {
+    id:'soft', label:'Soft Skills', groupType:'soft',
+    color:'var(--soft-color)', bg:'var(--soft-bg)', hex:'#7A3E6B',
+    skills:[
+      { id:'s_com', name:'Comunicación', desc:'Claridad, adaptación al interlocutor, capacidad de hacer decidir',
+        guide:{
+          2:{label:'Básico',qk:'Explícame un análisis o tarea técnica que hayas hecho recientemente.',qc:'Si yo no supiera nada del tema, ¿cómo me lo resumirías en 30 segundos?',ak_ok:'Se entiende, va al grano, no se pierde en detalles técnicos.',ak_bad:'Se lanza a explicar el método antes de decir para qué servía.',ac_ok:'En 30s da el contexto, el problema y la conclusión. Lenguaje no técnico.',ac_bad:'Tarda más de 1 min o usa jerga sin traducirla.',hint:'Si se entiende bien y llega al punto → 2-3. Si se pierde → 1.'},
+          5:{label:'Sólido',qk:'Tienes que contar a un manager un resultado técnico con limitaciones. ¿Cómo lo explicas?',qc:'¿Cómo adaptas una explicación si hablas con alguien técnico frente a alguien de negocio?',ak_ok:'Primero el resultado y sus implicaciones, luego las limitaciones con contexto. No oculta nada.',ak_bad:'Empieza por las limitaciones o las minimiza para no preocupar.',ac_ok:'Da ejemplos concretos de qué cambia: con el técnico va al método, con negocio va al impacto en decisiones.',ac_bad:'Dice "simplifico" sin poder articular qué quita y qué mantiene para cada perfil.',hint:'Adapta al interlocutor con ejemplos → 5-6. Solo dice que "simplifica" → 4.'},
+          8:{label:'Experto',qk:'Cuéntame una vez en la que tu forma de comunicar cambió una decisión.',qc:'¿Cómo explicarías una recomendación con incertidumbre para que alguien pueda decidir hoy?',ak_ok:'Caso real: describe qué estaba bloqueado, qué mensaje construyó, cómo reaccionaron. La decisión cambió.',ak_bad:'Describe una situación donde "convenció" sin articular el mensaje concreto ni el cambio.',ac_ok:'Presenta opciones con probabilidades o rangos, no un único número exacto. El interlocutor puede decidir con eso.',ac_bad:'Dice "soy transparente sobre la incertidumbre" sin poder articular cómo lo hace en la práctica.',hint:'Caso real con cambio demostrable → 8-9. Sin caso real → máx 7.'}
+        }
+      },
+      { id:'s_prob', name:'Entendimiento del problema', desc:'Reformulación, lectura del problema real vs. síntoma pedido',
+        guide:{
+          2:{label:'Básico',qk:'Cuando te piden algo ambiguo, ¿qué haces para entenderlo?',qc:'¿Cómo distingues entre lo que te piden y lo que realmente necesitan?',ak_ok:'Pregunta antes de ejecutar. Intenta entender el propósito detrás de la petición.',ak_bad:'Ejecuta lo que le piden literalmente sin preguntar.',ac_ok:'Da un ejemplo donde lo que pedían y lo que necesitaban era diferente, aunque sea pequeño.',ac_bad:'No tiene ningún ejemplo o dice que siempre coinciden.',hint:'Pregunta + ejemplo de distinción → 2-3. Ejecuta sin preguntar → 1.'},
+          5:{label:'Sólido',qk:'Dame un ejemplo en el que una petición inicial no era el problema real.',qc:'¿Qué preguntas harías al inicio de un proyecto para no atacar el síntoma?',ak_ok:'Caso concreto donde reformuló el problema y la solución resultante fue mejor.',ak_bad:'Describe una situación vaga sin poder articular qué pregunta reveló el problema real.',ac_ok:'Preguntas orientadas al propósito: ¿qué decisión vas a tomar con esto? ¿qué pasa si no lo hacemos?',ac_bad:'Hace preguntas técnicas antes de entender el propósito.',hint:'Ejemplo con reformulación real + preguntas de propósito → 5-6. Preguntas técnicas sin propósito → 4.'},
+          8:{label:'Experto',qk:'Cuéntame un caso en el que detectaste el problema real mejor que el propio cliente.',qc:'¿Cómo actúas cuando el stakeholder insiste en una línea que no ataca el fondo?',ak_ok:'Caso real donde tuvo que convencer al cliente de que el problema era otro. Describe la resistencia y cómo la gestionó.',ak_bad:'No tiene caso real o el ejemplo no implica resistencia del cliente.',ac_ok:'No cede, pero tampoco impone. Presenta evidencia del problema real y propone explorar ambas líneas.',ac_bad:'Sigue la línea del cliente aunque sepa que no es el problema real para evitar conflicto.',hint:'Caso real con resistencia gestionada → 8-9. Sin resistencia real → 7.'}
+        }
+      },
+      { id:'s_crit', name:'Criterio', desc:'Decisiones con información incompleta, trade-offs, priorización con impacto',
+        guide:{
+          2:{label:'Básico',qk:'Si tienes dos opciones válidas, ¿cómo eliges?',qc:'¿En qué te apoyas para decidir cuando no estás seguro?',ak_ok:'Tiene un criterio mínimo: impacto, coste, reversibilidad. No decide por intuición vacía.',ak_bad:'Dice "dependiendo del caso" sin poder articular ningún criterio.',ac_ok:'Se apoya en datos disponibles, en experiencias anteriores similares, o en preguntar a alguien con más contexto.',ac_bad:'Dice "mi instinto" o "lo que me parece" sin ninguna estructura.',hint:'Criterio mínimo articulado → 2-3. Solo intuición → 1.'},
+          5:{label:'Sólido',qk:'Cuéntame una decisión técnica o de trabajo que hayas tomado tú y por qué.',qc:'¿Cómo priorizas entre hacer algo más rápido o hacerlo más robusto?',ak_ok:'Decisión propia con razonamiento claro. Puede explicar qué valoró y qué descartó.',ak_bad:'La decisión fue colectiva o no puede articular por qué eligió esa opción.',ac_ok:'Depende del contexto: da criterios (¿es reversible? ¿qué pasa si falla? ¿cuántas veces se usará?). No da una respuesta única.',ac_bad:'Siempre prioriza velocidad o siempre prioriza robustez sin ver el trade-off.',hint:'Decisión propia con trade-off articulado → 5-6. Decisión colectiva sin criterio → 4.'},
+          8:{label:'Experto',qk:'Dame un ejemplo de una decisión difícil con información incompleta.',qc:'¿Cómo distingues entre una mejora importante y una mejora cosmética?',ak_ok:'Caso real con dilema, incertidumbre y decisión tomada. Puede articular qué asumió explícitamente.',ak_bad:'El caso no tenía incertidumbre real o la decisión era obvia en retrospectiva.',ac_ok:'Impacto en el resultado final vs. impacto en la percepción. Mide o estima el delta real antes de invertir tiempo.',ac_bad:'Dice "depende" sin poder dar un criterio de cómo decide cuál es cuál.',hint:'Caso real con asunción explícita + criterio de impacto → 8-9. Sin asunción explícita → 7.'}
+        }
+      },
+      { id:'s_pro', name:'Proactividad', desc:'Anticipación operativa, iniciativa con criterio (no hiperactividad)',
+        guide:{
+          2:{label:'Básico',qk:'Cuando terminas una tarea, ¿qué haces normalmente después?',qc:'Si ves un problema fuera de tu tarea directa, ¿cómo reaccionas?',ak_ok:'Busca qué hacer a continuación sin esperar instrucciones. Tiene algún hábito de anticipación.',ak_bad:'Espera a que le digan qué hacer a continuación.',ac_ok:'Lo menciona aunque no sea su responsabilidad directa. Al menos lo señala.',ac_bad:'No lo menciona porque "no era su tarea".',hint:'Busca siguiente paso + menciona problemas externos → 2-3. Espera instrucciones → 1.'},
+          5:{label:'Sólido',qk:'Cuéntame una vez en la que detectaste un problema antes de que te lo pidieran.',qc:'¿Qué tipo de mejoras propones normalmente en tu trabajo?',ak_ok:'Caso concreto donde anticipó algo. El problema era real y su anticipación tuvo impacto.',ak_bad:'El "problema" que detectó era evidente o alguien se lo había señalado previamente.',ac_ok:'Propone mejoras de proceso, herramientas o calidad. Tiene ejemplos.',ac_bad:'Solo propone mejoras cuando se lo piden o sus propuestas son puramente estéticas.',hint:'Anticipación real con impacto + mejoras propias → 5-6. Anticipación obvia → 4.'},
+          8:{label:'Experto',qk:'Cuéntame una mejora que propusiste y acabó cambiando una forma de trabajar.',qc:'¿Cómo decides cuándo merece la pena abrir una línea nueva sin que nadie te lo pida?',ak_ok:'Caso real donde su iniciativa cambió algo sistémico. Puede cuantificar el impacto.',ak_bad:'La mejora fue puntual o no cambió ninguna forma de trabajar.',ac_ok:'Tiene criterio: ¿cuántas personas se benefician? ¿cuántas veces ocurre? ¿cuál es el coste de no hacerlo?',ac_bad:'Abre líneas nuevas por entusiasmo sin criterio de impacto o viabilidad.',hint:'Mejora sistémica con impacto cuantificable + criterio de cuando abrir → 8-9. Impacto puntual → 7.'}
+        }
+      },
+      { id:'s_own', name:'Ownership', desc:'Responsabilidad sobre el resultado, no solo sobre la tarea',
+        guide:{
+          2:{label:'Básico',qk:'¿Qué significa para ti "hacerse responsable" de una tarea?',qc:'Si algo sale mal y tú solo hiciste una parte, ¿cómo lo gestionas?',ak_ok:'Responsabilidad = asegurarse de que la tarea está bien hecha, no solo entregada.',ak_bad:'Responsabilidad = hacer lo que me tocaba. Punto.',ac_ok:'No se desentiende aunque no sea su "parte". Al menos comunica el problema.',ac_bad:'Dice "eso no era mi parte" o espera a que alguien más lo gestione.',hint:'Responsabilidad sobre calidad + comunicación cuando hay problema → 2-3. Solo responsabilidad de entrega → 1.'},
+          5:{label:'Sólido',qk:'Cuéntame una vez en la que empujaste algo hasta cerrarlo bien.',qc:'¿Cómo aseguras que una entrega no se queda "solo hecha" sino bien cerrada?',ak_ok:'Caso donde no se conformó con entregar, sino que verificó que funcionaba y que el receptor lo entendía.',ak_bad:'Describe entregar algo a tiempo pero no verifica que resuelve el problema.',ac_ok:'Criterios concretos: revisión final, test o validación, confirmación con el destinatario.',ac_bad:'Dice "me aseguro de hacerlo bien" sin describir ningún mecanismo concreto.',hint:'Cierre verificado con mecanismo concreto → 5-6. Solo entrega a tiempo → 4.'},
+          8:{label:'Experto',qk:'Cuéntame una vez en la que asumiste la responsabilidad de un resultado, no solo de una tarea.',qc:'¿Qué haces cuando ves que algo importante puede salir mal aunque no sea tu culpa?',ak_ok:'Caso donde el resultado dependía de varios y se hizo responsable del conjunto, no de su parte.',ak_bad:'El caso describe responsabilidad de su tarea individual, aunque fuera compleja.',ac_ok:'Interviene aunque no sea su responsabilidad formal. Escala, propone, apoya.',ac_bad:'Dice "lo informo a quien corresponde" y se desentiende.',hint:'Ownership del resultado conjunto + intervención proactiva → 8-9. Solo ownership de tarea → 7.'}
+        }
+      },
+      { id:'s_col', name:'Colaboración', desc:'Coordinación práctica y colaboración de alto valor con perfiles distintos',
+        guide:{
+          2:{label:'Básico',qk:'¿Cómo sueles trabajar con otras personas cuando dependéis unos de otros?',qc:'¿Qué haces si alguien del equipo trabaja de forma muy distinta a ti?',ak_ok:'Establece acuerdos básicos de comunicación. Tolera formas de trabajar distintas.',ak_bad:'Espera que los demás se adapten a su forma de trabajar.',ac_ok:'Se adapta o busca un punto medio. No impone.',ac_bad:'Intenta cambiar al otro o se frustra.',hint:'Acuerdos + tolerancia → 2-3. Impone su forma → 1.'},
+          5:{label:'Sólido',qk:'Cuéntame una situación donde tuviste que coordinarte bien para sacar algo adelante.',qc:'¿Cómo evitas bloqueos o malentendidos entre perfiles distintos?',ak_ok:'Caso concreto con dependencias reales. Describe cómo gestionó la coordinación.',ak_bad:'La coordinación fue fácil o no había dependencias reales.',ac_ok:'Acuerdos explícitos, checkpoints, comunicación proactiva de bloqueos.',ac_bad:'Confía en que "la gente se coordinará sola".',hint:'Coordinación con dependencias reales + mecanismos explícitos → 5-6. Coordinación fácil → 4.'},
+          8:{label:'Experto',qk:'¿Cómo gestionas desacuerdos fuertes entre personas válidas dentro de un equipo?',qc:'Cuéntame una vez en la que ayudaste a alinear a varios perfiles con intereses distintos.',ak_ok:'No fuerza el consenso. Hace explícito el desacuerdo, busca el criterio de decisión y facilita.',ak_bad:'Busca consenso a toda costa aunque el resultado sea mediocre.',ac_ok:'Caso real con intereses genuinamente distintos. Describe cómo construyó el alineamiento.',ac_bad:'Los intereses distintos eran superficiales o la solución fue obvia.',hint:'Desacuerdo real gestionado + caso de alineamiento complejo → 8-9. Consenso fácil → 7.'}
+        }
+      },
+      { id:'s_apr', name:'Aprendizaje', desc:'Velocidad de maduración, aplicación del feedback, escalado del conocimiento',
+        guide:{
+          2:{label:'Básico',qk:'¿Cómo aprendes algo nuevo cuando no lo controlas?',qc:'¿Qué feedback recuerdas que te haya hecho mejorar?',ak_ok:'Tiene un método: lee, practica, pregunta, experimenta. No se bloquea.',ak_bad:'Espera a que alguien le enseñe o evita lo que no controla.',ac_ok:'Feedback específico que cambió algo concreto en su forma de trabajar.',ac_bad:'No recuerda ningún feedback o el cambio fue superficial.',hint:'Método de aprendizaje + feedback que cambió algo → 2-3. Sin método → 1.'},
+          5:{label:'Sólido',qk:'Cuéntame una skill que hayas aprendido recientemente y cómo la aterrizaste en tu trabajo.',qc:'¿Cómo conviertes feedback en cambio real?',ak_ok:'Aprendizaje reciente aplicado de forma concreta. Puede describir el antes y el después.',ak_bad:'Aprendió la skill pero no la ha aplicado aún o el impacto es intangible.',ac_ok:'Tiene un proceso: registra el feedback, identifica qué cambia, prueba y verifica.',ac_bad:'Dice "intento mejorar" sin ningún mecanismo concreto.',hint:'Skill aplicada con antes/después + proceso de feedback → 5-6. Aprendizaje sin aplicación → 4.'},
+          8:{label:'Experto',qk:'Cuéntame una vez en la que aceleraste mucho tu curva de aprendizaje en poco tiempo.',qc:'¿Cómo haces para que lo que aprendes no se quede solo en ti sino que mejore el trabajo?',ak_ok:'Caso real de aceleración intencional: estrategia deliberada, inmersión, práctica enfocada.',ak_bad:'Aprendió rápido por circunstancias externas sin estrategia propia.',ac_ok:'Documenta, comparte, crea plantillas o procesos que otros pueden usar.',ac_bad:'Comparte ocasionalmente pero no de forma sistemática.',hint:'Aceleración deliberada + escalado sistemático al equipo → 8-9. Aceleración sin estrategia → 7.'}
+        }
+      },
+      { id:'s_inf', name:'Influencia', desc:'Capacidad de mover decisiones sin autoridad formal, alineamiento transversal',
+        guide:{
+          2:{label:'Básico',qk:'¿Te resulta fácil defender tu punto de vista? ¿Cómo lo haces?',qc:'¿Qué haces si no están de acuerdo contigo?',ak_ok:'Argumenta con datos o lógica. No abandona su posición a la primera.',ak_bad:'O no defiende su posición o la impone sin argumentar.',ac_ok:'Escucha, reformula, busca el punto de desacuerdo real. No cede por cansancio.',ac_bad:'Cede inmediatamente o repite su argumento más fuerte.',hint:'Argumenta + busca desacuerdo real → 2-3. Cede o impone → 1.'},
+          5:{label:'Sólido',qk:'Cuéntame una vez en la que convenciste a alguien con argumentos.',qc:'¿Cómo construyes una recomendación para que tenga aceptación?',ak_ok:'Caso real donde cambió la opinión de alguien. Describe qué argumento fue decisivo.',ak_bad:'La persona ya estaba casi convencida o el desacuerdo era menor.',ac_ok:'Entiende el interés del otro antes de presentar. Construye desde lo que valoran.',ac_bad:'Presenta su posición sin adaptarla al interlocutor.',hint:'Caso real de convicción + construcción adaptada al interlocutor → 5-6. Desacuerdo menor → 4.'},
+          8:{label:'Experto',qk:'Cuéntame una decisión importante que ayudaste a mover sin tener autoridad formal.',qc:'¿Cómo alineas a personas que ven el problema desde sitios completamente distintos?',ak_ok:'Caso real de influencia transversal: personas con poder que no dependían de él, decisión movida.',ak_bad:'La decisión era de su equipo directo o tenía autoridad informal sobre los implicados.',ac_ok:'Hace explícito el desacuerdo de perspectivas, busca el interés compartido, construye desde ahí.',ac_bad:'Impone la perspectiva que cree correcta o crea un consenso superficial.',hint:'Influencia transversal real sin autoridad + alineamiento de perspectivas distintas → 8-9. Influencia sobre equipo directo → 7.'}
+        }
+      }
+    ]
+  }
+];
+
+const LEAD_BLOCKS = [
+  {
+    id:'lead', label:'Leadership', groupType:'lead',
+    color:'var(--lead-color)', bg:'var(--lead-bg)', hex:'#3E5A8C',
+    skills:[
+      { id:'l_pri', name:'Priorización', desc:'Decidir qué no hacer, gestionar la escasez de recursos y tiempo con criterio',
+        guide:{
+          2:{label:'Básico',qk:'¿Cómo eliges qué hacer primero cuando tienes varias tareas?',qc:'¿Qué criterio usas cuando todo parece urgente?',ak_ok:'Tiene un criterio mínimo: impacto, deadline, dependencias.',ak_bad:'Hace lo que le resulta más fácil o lo que le llegó primero.',ac_ok:'Distingue urgente de importante. Da un ejemplo.',ac_bad:'Trata todo como igual de urgente.',hint:'Criterio propio + distinción urgente/importante → 2-3. Sin criterio → 1.'},
+          5:{label:'Sólido',qk:'Cuéntame una vez en la que tuviste que decidir qué no hacer.',qc:'¿Cómo explicas al equipo o al cliente por qué algo queda fuera?',ak_ok:'Caso real donde explícitamente descartó algo con criterio y comunicó el porqué.',ak_bad:'Nunca tuvo que descartar o lo hizo sin comunicarlo.',ac_ok:'Explica el criterio de priorización, no solo la decisión. El equipo entiende la lógica.',ac_bad:'Simplemente dice que no va a hacerse sin explicar por qué.',hint:'Descarte explícito con criterio comunicado → 5-6. Sin comunicación → 4.'},
+          8:{label:'Experto',qk:'¿Cómo priorizas cuando casi todo parece urgente e importante a la vez?',qc:'¿Cómo aseguras que el equipo no se pierde en lo urgente y pierde lo importante?',ak_ok:'Tiene un sistema: frameworks (ICE, matriz Eisenhower adaptada), revisiones periódicas de prioridades.',ak_bad:'Prioriza reactivamente sin ningún sistema.',ac_ok:'Mecanismos explícitos: reuniones de priorización, visibilidad del backlog, proteger tiempo para lo importante.',ac_bad:'Confía en que el equipo lo gestionará solo.',hint:'Sistema propio de priorización + mecanismo para proteger lo importante → 8-9.'}
+        }
+      },
+      { id:'l_dev', name:'Desarrollo de personas', desc:'Detectar potencial, dar feedback útil, hacer crecer a perfiles distintos',
+        guide:{
+          2:{label:'Básico',qk:'¿Has ayudado alguna vez a alguien a aprender algo?',qc:'¿Cómo te aseguras de que el feedback que das sirve de algo?',ak_ok:'Tiene algún ejemplo de haber ayudado a alguien a desarrollarse, aunque sea informal.',ak_bad:'Nunca ha tenido ese rol o no recuerda ningún ejemplo.',ac_ok:'Feedback específico, con comportamiento concreto y efecto observable.',ac_bad:'Feedback genérico tipo "lo estás haciendo bien".',hint:'Ejemplo de ayuda real + feedback con comportamiento → 2-3. Sin ejemplos → 1.'},
+          5:{label:'Sólido',qk:'Cuéntame cómo has dado feedback útil a otra persona que cambió algo en ella.',qc:'¿Cómo adaptas tu forma de desarrollar a perfiles distintos?',ak_ok:'Caso real donde el feedback produjo un cambio observable en la otra persona.',ak_bad:'El feedback fue bien recibido pero no hay evidencia de cambio.',ac_ok:'Adapta el foco según las fortalezas y gaps de cada persona. No usa el mismo enfoque para todos.',ac_bad:'Da el mismo tipo de feedback y el mismo tipo de retos a todo el mundo.',hint:'Cambio observable + adaptación por perfil → 5-6. Feedback sin cambio → 4.'},
+          8:{label:'Experto',qk:'¿Cómo detectas potencial en alguien que todavía no lo ha demostrado del todo?',qc:'Cuéntame cómo has acelerado el crecimiento de alguien con potencial claro.',ak_ok:'Tiene señales concretas de potencial: velocidad de aprendizaje, calidad de preguntas, cómo gestiona la ambigüedad.',ak_bad:'Detecta potencial solo por resultados actuales, sin ver más allá.',ac_ok:'Caso real: reto asignado, acompañamiento calibrado, resultado superior al esperado.',ac_bad:'Caso donde el crecimiento fue solo por tiempo o por las circunstancias.',hint:'Señales de potencial propias + caso de aceleración deliberada → 8-9.'}
+        }
+      },
+      { id:'l_coo', name:'Coordinación', desc:'Ordenar trabajo compartido sin convertirse en cuello de botella',
+        guide:{
+          2:{label:'Básico',qk:'¿Cómo haces seguimiento cuando dependes de otros?',qc:'¿Qué haces si alguien en quien dependes se retrasa?',ak_ok:'Tiene un sistema básico de seguimiento: checkpoints, actualizaciones periódicas.',ak_bad:'Confía en que los demás cumplirán sin ningún mecanismo.',ac_ok:'Anticipa el riesgo, comunica pronto, busca alternativas antes de que el retraso bloquee.',ac_bad:'Espera a que el retraso sea visible y entonces escala.',hint:'Seguimiento básico + anticipación de riesgo → 2-3. Sin seguimiento → 1.'},
+          5:{label:'Sólido',qk:'Cuéntame una coordinación compleja que llevaste entre varias personas.',qc:'¿Cómo evitas ser tú el cuello de botella en una coordinación?',ak_ok:'Coordinación real con dependencias múltiples. Describe cómo la estructuró.',ak_bad:'La coordinación era entre dos personas o sin dependencias reales.',ac_ok:'Delega con contexto, no solo con tarea. Asegura que cada uno puede avanzar sin él.',ac_bad:'Centraliza todas las decisiones o aprobaciones en sí mismo.',hint:'Coordinación múltiple estructurada + delegación con contexto → 5-6. Centralización → 4.'},
+          8:{label:'Experto',qk:'¿Cómo ordenas trabajo compartido a escala, con muchas personas, sin microgestionar?',qc:'¿Cómo sabes cuándo intervenir y cuándo dejar que el equipo resuelva?',ak_ok:'Sistema: roles claros, visibilidad del progreso, decisiones delegadas con criterio explícito.',ak_bad:'Escala revisando todo el trabajo o confiando completamente sin visibilidad.',ac_ok:'Tiene criterio de cuándo intervenir: riesgo al resultado, petición de ayuda, señal de bloqueo.',ac_bad:'Interviene por ansiedad o no interviene por querer dar autonomía aunque el resultado esté en riesgo.',hint:'Sistema de coordinación a escala + criterio de intervención → 8-9.'}
+        }
+      },
+      { id:'l_vis', name:'Visión / Escalado', desc:'Capacidad de mejorar formas de trabajo, elevar al equipo, ver más allá del corto plazo',
+        guide:{
+          2:{label:'Básico',qk:'¿Qué entiendes por mejorar una forma de trabajar?',qc:'¿Cómo decides si algo merece cambiarse o es mejor dejarlo como está?',ak_ok:'Entiende que mejorar implica cambio con impacto, no cambio por cambio.',ak_bad:'Mejorar = hacer más rápido o usar una herramienta nueva.',ac_ok:'Criterio mínimo: ¿cuánto tiempo/esfuerzo ahorra? ¿cuántas personas afecta? ¿es sostenible?',ac_bad:'Cambia cosas porque le parecen mejores sin criterio de impacto.',hint:'Mejora con impacto + criterio básico de cuando cambiar → 2-3. Cambio sin criterio → 1.'},
+          5:{label:'Sólido',qk:'Cuéntame una mejora de proceso que hayas implantado. ¿Cuál fue el antes y el después?',qc:'¿Cómo consigues que los cambios que propones se adopten realmente?',ak_ok:'Mejora concreta con métricas antes/después. Fue adoptada por el equipo.',ak_bad:'Mejora sin datos de impacto o que no fue adoptada.',ac_ok:'Co-diseña con quien lo va a usar. No impone. Prueba en pequeño antes de escalar.',ac_bad:'Propone el cambio y espera que los demás lo adopten solos.',hint:'Mejora con antes/después + estrategia de adopción → 5-6. Mejora no adoptada → 4.'},
+          8:{label:'Experto',qk:'¿Cómo decides qué cambios elevan de verdad al equipo y cuáles son ruido?',qc:'Cuéntame una vez en la que elevaste la capacidad del equipo de forma sistemática.',ak_ok:'Criterio propio: impacto en el resultado del equipo, escalabilidad, sostenibilidad sin su presencia.',ak_bad:'Decide intuitivamente o según lo que le parece más urgente.',ac_ok:'Caso real donde la capacidad del equipo aumentó de forma duradera, no solo por su presencia.',ac_bad:'El caso describe su impacto individual, no el del equipo.',hint:'Criterio de impacto sistémico + caso de elevación duradera del equipo → 8-9.'}
+        }
+      }
+    ]
+  }
+];
+
+// ─── DATA ───────────────────────────────────────────────────────────────────
+let BLOCKS = [
+  {
+    id: 'data', label: 'Data', weight: 0.30,
+    color: 'var(--data-color)', bg: 'var(--data-bg)', hex: '#2C5F8A',
+    skills: [
+      {
+        id: 'd1', name: 'Razonamiento analítico',
+        desc: 'Formula problemas de negocio, distingue síntoma de causa, convierte datos en decisiones accionables',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['¿Sabes qué es un análisis de datos? ¿Has trabajado con algún dataset, por pequeño que sea?',
+                'Si te digo que hay un pico de consumo el día 15 en este gráfico, ¿qué información necesitarías antes de sacar una conclusión?'],
+            tip: 'No ha hecho análisis propio. Reconoce conceptos pero no ha aplicado nada. Señal de alerta: responde sin pedir contexto.' },
+          2: { label: 'Ejecuta análisis definidos',
+            q: ['Te paso un dataset de consumos de 30 transformadores. ¿Qué harías con él? Descríbeme el proceso paso a paso.',
+                'Dame un ejemplo de algo que hayas analizado con datos, por simple que sea. ¿Qué querías saber y a qué conclusión llegaste?'],
+            tip: 'Junior: sigue el proceso correcto pero necesita que le digan qué buscar. La conclusión es descriptiva ("hay un pico el día 15"), no accionable. No llega a proponer hipótesis sobre la causa.' },
+          3: { label: 'Extrae conclusiones propias',
+            q: ['El mismo dataset: los transformadores de una zona tienen pérdidas un 30% más altas que la media. ¿Qué hipótesis barajas y cómo las testeas?',
+                '¿Cómo decides cuándo un análisis está lo suficientemente completo para compartirlo con el cliente?'],
+            tip: 'Empieza a proponer hipótesis pero las testa de forma lineal. La conclusión ya es interpretativa pero no llega a conectarla con una decisión concreta del cliente.' },
+          4: { label: 'Diseña análisis y extrae conclusiones accionables',
+            q: ['Un cliente te pide "analizar la calidad del dato de su telemedida". ¿Cómo estructuras ese encargo de principio a fin?',
+                '¿Cómo presentarías los resultados de un análisis de calidad del dato para que el cliente DSO pueda tomar una decisión con ellos?'],
+            tip: 'Mid: estructura el análisis sin que se lo definan, la conclusión tiene implicación para el cliente ("esto afecta a vuestra retribución porque..."). El trabajo no termina con el informe, termina cuando el cliente decide.' },
+          5: { label: 'Formula problemas de negocio',
+            q: ['¿Qué diferencia hay entre hacer un análisis que describe la red y hacer uno que cambia cómo opera el cliente? Dame un ejemplo concreto que hayas vivido.',
+                'Cuéntame un caso donde los datos te llevaron a reformular el problema que el cliente creía tener.'],
+            tip: 'Senior: va de la petición del cliente al problema real detrás. Conecta hallazgos técnicos con decisiones de inversión, regulación o operación. El cliente cambia algo concreto gracias al análisis.' }
+        }
+      },
+      {
+        id: 'd2', name: 'Tratamiento y calidad del dato',
+        desc: 'Limpieza, validación, diagnóstico de fuentes (GIS, S21/S04/S05, telegestión) y gestión de calidad del dato como activo',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['¿Qué es un dato nulo? ¿Y un duplicado? ¿Has visto alguna vez un dataset con problemas de calidad?',
+                '¿Qué es el GIS en el contexto de una red eléctrica? ¿Y la telegestión?'],
+            tip: 'Conoce los conceptos por nombre pero no los ha aplicado. No ha trabajado con fuentes reales de DSO.' },
+          2: { label: 'Limpieza básica con supervisión',
+            q: ['¿Con qué fuentes de datos de un DSO has trabajado o sabes que existen? ¿Qué problemas típicos tienen?',
+                'Tienes una serie temporal de lecturas de telemedida con huecos y valores a cero. ¿Qué haces paso a paso?'],
+            tip: 'Junior: conoce las fuentes por nombre (GIS, S21, telegestión), aplica limpieza estándar (dropna, fillna) pero necesita que le indiquen el criterio. Identifica el dato raro pero pide ayuda para diagnosticar si es sensor o red.' },
+          3: { label: 'Diagnóstico autónomo',
+            q: ['¿Cómo distingues si un problema en los datos viene del sensor, del sistema de comunicaciones o de la red eléctrica?',
+                'Tienes activos en el GIS que no aparecen en la telegestión. ¿Cómo lo investigas?'],
+            tip: 'Empieza a distinguir problema de sensor vs problema de red. Puede reconstruir un activo digital parcial con las fuentes disponibles.' },
+          4: { label: 'Informe de Calidad del Dato autónomo',
+            q: ['¿Cómo harías un Informe de Calidad del Dato para un DSO nuevo? ¿Qué dimensiones cubres y cómo lo presentas?',
+                'Un cliente tiene el 40% de sus CTs sin lecturas en el último mes. ¿Qué implica eso para su retribución regulada y cómo lo comunicas?'],
+            tip: 'Mid: hace el ICD completo sin guía, conecta calidad del dato con impacto en retribución y operación. La conclusión es accionable para el cliente.' },
+          5: { label: 'Dictamina el ecosistema completo',
+            q: ['¿Cómo lees el ecosistema de datos de un DSO nuevo y dictaminas qué se puede explotar y qué no?',
+                '¿Cómo conectas la calidad del dato con el riesgo regulatorio de un cliente concreto? Dame un ejemplo real.'],
+            tip: 'Senior: en una primera conversación con un DSO ya sabe qué preguntar, qué gaps va a encontrar y qué implica cada uno. Conecta dato, red y regulación como un solo sistema.' }
+        }
+      },
+      {
+        id: 'd3', name: 'Python, SQL y pipelines',
+        desc: 'Capacidades técnicas de ingeniería de datos: desde análisis exploratorio hasta arquitecturas de datos productivas',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['¿Qué es SQL? ¿Y pandas? ¿Has escrito alguna vez un script aunque sea muy sencillo?',
+                '¿Qué entiendes por un pipeline de datos? ¿Has visto alguno aunque no lo hayas construido tú?'],
+            tip: 'No ha escrito código propio o solo cosas muy triviales. Reconoce el vocabulario pero no lo aplica.' },
+          2: { label: 'Scripts básicos funcionales',
+            q: ['¿Qué sabes hacer con Python y SQL? Dame ejemplos concretos de lo que has construido, aunque sea pequeño.',
+                'Tienes un CSV con lecturas de contadores y un JSON con la topología de la red. ¿Cómo los cruzas para calcular pérdidas por tramo?'],
+            tip: 'Junior: SQL básico (SELECT, JOIN, GROUP BY), pandas para transformaciones simples, sabe qué es un pipeline aunque no haya construido uno completo. Trabaja con JSON/CSV sin problemas. Noción de staging vs marts.' },
+          3: { label: 'Pipelines completos con calidad',
+            q: ['¿Cómo construyes un pipeline de datos que sea fiable en producción? ¿Qué incluyes para saber cuándo falla?',
+                '¿Has usado algún orquestador (Airflow, Prefect, Dagster)? ¿Cómo decides cuándo vale la pena usarlo?'],
+            tip: 'Construye pipelines completos con manejo de errores y logging. Conoce al menos un orquestador. Entiende la diferencia entre un script que funciona y uno que es mantenible.' },
+          4: { label: 'Modelado dimensional y dbt',
+            q: ['¿Cómo diseñas el modelado de datos para que los equipos de negocio puedan explotar los datos de red de forma autónoma?',
+                '¿Cómo implementas testing y CI/CD en un proyecto de datos? ¿Qué pruebas son innegociables para ti?'],
+            tip: 'Mid: modelado dimensional (facts/dimensions), dbt como estándar de transformación, testing y CI/CD integrados. Entiende el end-to-end de Gridfy: cómo el dato de red se convierte en un producto analítico.' },
+          5: { label: 'Arquitecturas y métricas de negocio',
+            q: ['¿Cómo diseñas la arquitectura de datos de un DSO mediano? ¿Qué warehouse elegirías y por qué?',
+                '¿Cómo garantizas que las métricas de negocio son consistentes entre equipos cuando varios analistas las calculan por su cuenta?'],
+            tip: 'Senior: diseña arquitecturas completas, estima costes, optimiza rendimiento. Define métricas de negocio como activos compartidos. Selecciona y prioriza casos de uso según impacto para Gridfy y el DSO.' }
+        }
+      },
+      {
+        id: 'd4', name: 'Modelado de red y simulación',
+        desc: 'Pandapower, CIM, modelos de cálculo de pérdidas, capacidad nodal y simulación de escenarios de red',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['¿Qué es un flujo de cargas? ¿Has oído hablar de pandapower o de alguna herramienta de simulación de red?',
+                '¿Qué es un bus en el contexto de una red eléctrica? ¿Y una línea MT?'],
+            tip: 'Reconoce el vocabulario de red pero no ha trabajado con modelos. No ha ejecutado ningún load flow.' },
+          2: { label: 'Ejecuta modelos definidos',
+            q: ['¿Qué es un flujo de cargas y qué resultados produce? ¿Para qué lo usaría un DSO?',
+                '¿Qué elementos necesitas para construir un modelo básico de red en pandapower?'],
+            tip: 'Junior: sabe qué es un load flow y qué produce (tensiones, flujos), puede ejecutar un modelo ya definido. Conoce los elementos básicos de pandapower (buses, líneas, transformadores, cargas).' },
+          3: { label: 'Lee estudios y detecta errores',
+            q: ['Te paso un estudio de capacidad nodal de una red MT. ¿Cómo lo lees y qué errores típicos buscas?',
+                '¿Cómo detectas si un modelo de red está bien construido antes de fiarte de sus resultados?'],
+            tip: 'Lee un estudio de capacidad nodal y detecta incongruencias. Diagnostica congestiones y desviaciones de tensión sin apoyo. Sabe cuándo el modelo no refleja la realidad.' },
+          4: { label: 'Diseña análisis de red autónomamente',
+            q: ['¿Cómo diseñarías el análisis de red para un Gridfy.360 de un cliente nuevo? ¿Qué casos de uso priorizas?',
+                '¿Cómo conectas el modelo de red digital con los datos reales de telemedida para detectar pérdidas no técnicas?'],
+            tip: 'Mid: diseña el análisis de red para un proyecto concreto, conecta modelo con datos reales. Sabe qué preguntar al cliente para construir el modelo.' },
+          5: { label: 'Ve cuándo la física manda',
+            q: ['¿Cómo sabes cuándo un modelo de red está prometiendo más de lo que la física permite?',
+                '¿Cómo diseñarías la arquitectura analítica de un Gridfy.360 para un DSO con 500 CTs y datos de calidad mediocre?'],
+            tip: 'Senior: detecta cuando los resultados de un modelo son físicamente imposibles. Diseña la arquitectura analítica completa. Interlocutor técnico con el DSO sobre la calidad y validez de sus propios modelos.' }
+        }
+      },
+      {
+        id: 'd5', name: 'Dato como producto',
+        desc: 'Capacidad de convertir datos técnicos en datasets analíticos reutilizables, orientados a la decisión del DSO',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['¿Qué diferencia hay entre datos y información? ¿Puedes darme un ejemplo concreto?',
+                "¿Has oído hablar del concepto 'dato como producto'? ¿Qué crees que significa?"],
+            tip: 'No ha construido ningún dataset analítico. Reconoce la distinción conceptual pero no la aplica.' },
+          2: { label: 'Entiende qué es un dataset analítico',
+            q: ['¿Qué diferencia hay entre un dato crudo de telemedida y un dataset analítico listo para usar?',
+                '¿Qué preguntas de negocio crees que se pueden responder con datos de una red de distribución?'],
+            tip: 'Junior: distingue dato crudo de dato procesado. Sabe que los datos sirven para responder preguntas de negocio aunque no haya construido productos de dato propios.' },
+          3: { label: 'Construye datasets reutilizables',
+            q: ['Cuéntame un dataset analítico que hayas construido o contribuido a construir. ¿Quién lo usa y para qué?',
+                '¿Cómo documentas un dataset para que otro equipo pueda usarlo sin preguntarte nada?'],
+            tip: 'Construye datasets con criterio de reutilización, los documenta. Empieza a pensar en el usuario del dato, no solo en el dato.' },
+          4: { label: 'Diseña para equipos de negocio',
+            q: ['¿Cómo decides qué datasets construir para que los equipos de negocio y regulatorio puedan trabajar de forma autónoma?',
+                '¿Cómo garantizas que un dataset de red es consistente a lo largo del tiempo aunque cambien las fuentes?'],
+            tip: 'Mid: diseña datasets pensando en el consumidor final (equipo de negocio, regulatorio). Gestiona la consistencia aunque cambien las fuentes. El dato tiene valor de producto.' },
+          5: { label: 'Entiende la red, el regulatorio y el dato como sistema',
+            q: ['¿Cómo seleccionas y priorizas los casos de uso de dato para un DSO? ¿Qué criterios usas?',
+                '¿Puedes describir un caso donde un dataset analítico que construiste cambió una decisión operativa o regulatoria del cliente?'],
+            tip: 'Senior para Gridfy: entiende el comportamiento de la red, su regulación y el valor de producto del dato de forma integrada. Selecciona casos de uso por impacto para Gridfy y el DSO. El análisis termina cuando el cliente cambia algo.' }
+        }
+      }
+    ]
+  },
+  {
+    id: 'elec', label: 'Electricidad', weight: 0.25,
+    color: 'var(--elec-color)', bg: 'var(--elec-bg)', hex: '#2A7A56',
+    skills: [
+      {
+        id: 'e1', name: 'Fundamentos de red y operación',
+        desc: 'Topología, activos, operación del sistema eléctrico: BT/MT/AT, CT, SET, TSO/DSO, flujos de potencia',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['¿Qué es una red de distribución eléctrica? ¿Qué diferencia hay entre BT y MT?',
+                '¿Qué es un DSO? ¿Y un TSO? ¿Sabes nombrar alguna distribuidora española?'],
+            tip: 'Vocabulario muy básico o nulo. No puede seguir una conversación técnica sin perderse.' },
+          2: { label: 'Maneja el vocabulario',
+            q: ['Explícame qué es un CT, una SET y cómo se relacionan en una red MT. ¿Qué mide cada uno y qué datos genera?',
+                '¿Qué es el TIEPI y por qué le importa a una distribuidora?'],
+            tip: 'Junior: maneja el vocabulario sin perderse (BT/MT/AT, CT, SET, TIEPI, pérdidas, capacidad). Puede seguir un análisis técnico aunque no dirija el diagnóstico.' },
+          3: { label: 'Lee estudios técnicos',
+            q: ['Te paso un informe de pérdidas técnicas de una red MT. ¿Qué buscas para saber si los resultados son creíbles?',
+                '¿Cómo detectas una congestión en una línea MT solo mirando datos de telemedida?'],
+            tip: 'Lee estudios técnicos sin perderse. Detecta incongruencias básicas en los datos.' },
+          4: { label: 'Diagnostica sin apoyo',
+            q: ['Un DSO tiene desequilibrios de fases sistemáticos en una zona. ¿Cómo diagnosticas la causa y qué le propones?',
+                '¿Cómo detectarías pérdidas no técnicas (fraude o error de medida) en una zona residencial?'],
+            tip: 'Mid: diagnostica congestiones, desviaciones de tensión y desequilibrios de fases sin apoyo. Propone mejoras concretas. Analiza comportamiento de red y lo conecta con datos.' },
+          5: { label: 'Anticipa y conecta con negocio',
+            q: ['Cuéntame un caso donde el análisis de la red eléctrica anticipó un problema antes de que el cliente lo detectara.',
+                '¿Cómo conectas los equipos físicos de un DSO con su realidad digital y regulatoria para diseñar un Gridfy.360?'],
+            tip: 'Senior: anticipa problemas de red y propone soluciones operativas. Conecta la física de la red con el dato digital y la regulación. Ve cuándo un modelo promete más de lo que la física permite.' }
+        }
+      },
+      {
+        id: 'e2', name: 'Calidad de suministro y regulación técnica',
+        desc: 'TIEPI, NIEPI, calidad de onda, interrupciones, relación entre calidad técnica y retribución regulada',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['¿Has oído hablar del TIEPI? ¿Qué crees que mide?',
+                '¿Qué es una interrupción de suministro eléctrico? ¿Qué diferencia hay entre un corte breve y uno largo?'],
+            tip: 'No conoce los índices de calidad. Responde de forma muy genérica sin conectar con la regulación.' },
+          2: { label: 'Conoce los índices',
+            q: ['¿Qué es el TIEPI y cómo afecta a los ingresos de una distribuidora?',
+                '¿Qué diferencia hay entre una interrupción larga y un hueco de tensión? ¿Por qué importa la distinción?'],
+            tip: 'Junior: sitúa los índices de calidad (TIEPI, NIEPI) y entiende a nivel conceptual que afectan a la retribución, aunque no sabe calcular el impacto económico.' },
+          3: { label: 'Calcula el impacto',
+            q: ['Una zona tiene TIEPI de 6h cuando el límite es 3h. ¿Qué consecuencias económicas concretas tiene para el DSO?',
+                '¿Cómo usarías datos de telemedida para estimar el TIEPI de una zona con datos parciales?'],
+            tip: 'Calcula el impacto retributivo de incumplir los índices. Conecta dato de red con indicador regulatorio.' },
+          4: { label: 'Diagnóstico de calidad end-to-end',
+            q: ['¿Cómo harías un diagnóstico de calidad de suministro de una zona para decidir dónde invertir primero?',
+                'Te presento tres zonas con TIEPI distintos y activos de distintas edades. ¿Cómo priorizas la inversión?'],
+            tip: 'Mid: hace el diagnóstico de calidad completo, prioriza inversiones con criterio técnico y económico. El resultado es accionable para el cliente DSO.' },
+          5: { label: 'Optimiza el impacto regulatorio',
+            q: ['¿Cómo diseñarías un Plan Director de calidad de suministro que sea defendible ante la CNMC?',
+                '¿Cómo conectas la mejora de indicadores de calidad con la retribución del DSO en el siguiente periodo regulatorio?'],
+            tip: 'Senior: optimiza decisiones de inversión para maximizar impacto en retribución regulada. Construye argumentarios ante CNMC. El cliente cambia cómo opera gracias al análisis.' }
+        }
+      },
+      {
+        id: 'e3', name: 'Protecciones y seguridad de red',
+        desc: 'Sistemas de protección, selectividad, coordinación, recierre, impacto de la GD en las protecciones',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['¿Para qué sirve una protección eléctrica? ¿Qué pasa cuando actúa?',
+                '¿Has oído hablar de la selectividad en protecciones eléctricas? ¿Qué crees que significa?'],
+            tip: 'Conoce el concepto a muy alto nivel pero no el mecanismo. No distingue tipos de protecciones.' },
+          2: { label: 'Entiende el mecanismo básico',
+            q: ['¿Para qué sirve una protección eléctrica y qué pasa exactamente cuando actúa?',
+                '¿Qué diferencia hay entre una protección de sobreintensidad (51) y una diferencial (87)?'],
+            tip: 'Junior: sabe para qué sirven las protecciones y el mecanismo básico (detección → disparo → apertura). Distingue los tipos principales.' },
+          3: { label: 'Selectividad y coordinación',
+            q: ['¿Qué es la selectividad y qué pasa cuando falla en una red MT?',
+                '¿Qué es el recierre automático y qué riesgo aparece si hay generación distribuida en la línea?'],
+            tip: 'Entiende la selectividad y sus consecuencias. Sabe qué es el recierre y el riesgo de islanding con GD.' },
+          4: { label: 'Diagnóstico con GD',
+            q: ['Conectas un parque solar de 5 MW en el extremo de una línea MT con protección no direccional. ¿Qué problemas aparecen y cómo los resuelves?',
+                '¿Cómo afecta la penetración de GD a la coordinación de protecciones de un DSO?'],
+            tip: 'Mid: diagnostica los problemas que introduce la GD en las protecciones (flujo inverso, islanding, actuaciones incorrectas). Propone soluciones concretas.' },
+          5: { label: 'Diseño de arquitectura de protecciones',
+            q: ['Cuéntame un proyecto real donde hayas revisado o diseñado un esquema de protecciones. ¿Qué compromisos técnicos tuviste que tomar?',
+                '¿Cómo decides cuándo la arquitectura de protecciones de un DSO necesita una revisión completa?'],
+            tip: 'Senior: ha trabajado en proyectos reales de protecciones con GD. Puede articular los compromisos técnicos. Anticipa cuándo la arquitectura existente no es compatible con los nuevos flujos.' }
+        }
+      },
+      {
+        id: 'e4', name: 'Comunicaciones y digitalización',
+        desc: 'Protocolos SCADA, IEC 61850, telemedida, arquitectura de comunicaciones en subestaciones digitales',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['¿Qué es un SCADA? ¿Para qué sirve en una empresa eléctrica?',
+                '¿Has oído hablar de los protocolos de comunicación industrial? ¿Algún ejemplo?'],
+            tip: 'Conoce SCADA como concepto genérico pero no sus componentes ni protocolos.' },
+          2: { label: 'Sabe qué es un SCADA',
+            q: ['¿Para qué sirve un SCADA en un DSO? ¿Qué información maneja y qué permite hacer?',
+                '¿Qué diferencia hay entre un RTU y un IED?'],
+            tip: 'Junior: sabe qué es un SCADA y para qué sirve. Distingue RTU de IED. No necesita conocer los protocolos en profundidad.' },
+          3: { label: 'Conoce los protocolos clave',
+            q: ['¿Qué diferencia hay entre IEC 60870-5-104 e IEC 61850? ¿Cuándo usarías cada uno?',
+                '¿Qué es GOOSE y por qué se usa para protecciones?'],
+            tip: 'Conoce los protocolos principales y sabe cuándo usar cada uno. Entiende GOOSE y su requisito de latencia.' },
+          4: { label: 'Diseña arquitecturas de comunicación',
+            q: ['¿Cómo diseñarías la arquitectura de comunicaciones de una subestación digital nueva? ¿Qué criterios de redundancia aplicas?',
+                '¿Cómo integrarías los datos de un SCADA legacy en una plataforma de análisis moderna?'],
+            tip: 'Mid: diseña arquitecturas de comunicación con criterios de redundancia y seguridad. Sabe integrar sistemas legacy.' },
+          5: { label: 'Conecta digitalización con negocio',
+            q: ['¿Cómo traduces la hoja de ruta de digitalización de un DSO en casos de uso de dato concretos para Gridfy?',
+                '¿Cuándo la arquitectura de comunicaciones de un DSO es el cuello de botella para el análisis de datos?'],
+            tip: 'Senior: conecta la arquitectura tecnológica del DSO con los casos de uso analíticos de Gridfy. Detecta cuándo las limitaciones de comunicaciones limitan el valor que Gridfy puede generar.' }
+        }
+      },
+      {
+        id: 'e5', name: 'Criterio técnico en soluciones',
+        desc: 'Capacidad de proponer soluciones eléctricas viables, bien justificadas y orientadas a la decisión del DSO',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['Si una línea eléctrica está sobrecargada, ¿qué opciones técnicas existen para resolver el problema?',
+                '¿Qué preguntas harías antes de proponer una solución técnica a un problema de red que no conoces?'],
+            tip: 'Nombra opciones genéricas sin criterio. No pregunta por contexto antes de proponer.' },
+          2: { label: 'Propone opciones básicas',
+            q: ['Un transformador de 250 kVA lleva 3 años al 95% de carga. ¿Qué opciones técnicas tienes? ¿Cuál es tu primera pregunta antes de proponer?',
+                '¿Cómo justificarías técnicamente una recomendación de inversión a un cliente que no es experto eléctrico?'],
+            tip: 'Junior: nombra opciones técnicas básicas (sustituir, paralelo, redistribuir). Su primera pregunta es de contexto, no de solución.' },
+          3: { label: 'Evalúa trade-offs',
+            q: ['Una línea MT de 15 km tiene tensión en el extremo de 0.92 pu. Con presupuesto para una medida, ¿qué eliges: regulador o reconductorizar? Justifica.',
+                '¿Cómo le explicas a un director de operaciones que la solución más cara es la correcta?'],
+            tip: 'Evalúa el trade-off con criterio de horizonte y coste. La recomendación considera el contexto del cliente.' },
+          4: { label: 'Prioriza con criterio regulatorio',
+            q: ['Un DSO tiene 50 transformadores al 90% de carga y 2M€ de presupuesto. ¿Cómo priorizas qué intervenir primero?',
+                '¿Cómo conectas la decisión técnica de inversión con el impacto en la retribución regulada del DSO?'],
+            tip: 'Mid: prioriza con criterios de probabilidad de fallo, impacto en TIEPI y retribución. La recomendación es accionable y el cliente puede decidir con ella.' },
+          5: { label: 'Diseña soluciones que cambian cómo opera el cliente',
+            q: ['Cuéntame la solución técnica más compleja que hayas propuesto. ¿Qué opciones descartaste y por qué?',
+                '¿Cómo sabes cuándo una solución técnica cambia de verdad cómo opera un DSO y cuándo es solo una mejora incremental?'],
+            tip: 'Senior: la solución propuesta tiene impacto en cómo el cliente opera o cómo maximiza su retribución. Puede articular qué descartó y por qué. El análisis termina cuando el cliente decide.' }
+        }
+      }
+    ]
+  },
+  {
+    id: 'secreg', label: 'Sector & Regulación', weight: 0.30,
+    color: 'var(--norm-color)', bg: 'var(--norm-bg)', hex: '#8A4A1A',
+    skills: [
+      {
+        id: 'sr1', name: 'Modelo de negocio del DSO',
+        desc: 'Cómo gana dinero un DSO, cadena de valor, actores del sistema, diferencias entre grupos regulatorios',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['¿Cómo gana dinero una empresa distribuidora eléctrica? ¿Es igual que una comercializadora?',
+                '¿Qué es un DSO? ¿Puedes nombrar alguno de los clientes tipo que tendría una empresa como Gridfy?'],
+            tip: 'Conoce el concepto de distribuidora pero no distingue el modelo de negocio regulado. No ha estudiado el sector.' },
+          2: { label: 'Conoce la cadena de valor',
+            q: ['¿Cómo gana dinero una distribuidora eléctrica? ¿Qué control tiene sobre sus ingresos?',
+                '¿Qué diferencia hay entre DSO, TSO y comercializador en términos de modelo de negocio?'],
+            tip: 'Junior: conoce la cadena de valor y entiende que el DSO tiene ingresos regulados. Empieza a conocer el portfolio de clientes Gridfy y las asociaciones del sector.' },
+          3: { label: 'Distingue por tamaño y grupo',
+            q: ['¿Por qué importa el tamaño de un DSO para entender sus parámetros retributivos?',
+                '¿Qué diferencia en la propuesta de valor de Gridfy hay entre una cooperativa familiar y un grupo industrial?'],
+            tip: 'Distingue DSOs por tamaño y entiende que los parámetros retributivos cambian por grupo regulatorio. Conoce el mapa competitivo (Sercide, Envelio, Plexigrid) y el posicionamiento Gridfy.' },
+          4: { label: 'Entiende cómo gana dinero el DSO de verdad',
+            q: ['¿Cuáles son las palancas reales que tiene un DSO para maximizar su retribución regulada?',
+                '¿Cómo calibras la propuesta de valor de Gridfy según el cliente concreto que tienes delante?'],
+            tip: 'Mid: entiende cómo gana dinero un DSO con suficiente profundidad para calibrar la propuesta de Gridfy. No es genérico: sabe qué le duele a cada tipo de cliente.' },
+          5: { label: 'Conoce actores con nombre y apellidos',
+            q: ['¿Qué actores del sector conoces personalmente y cómo usas esas relaciones en tu trabajo?',
+                '¿Cómo detectas cuándo el sector está girando hacia algo nuevo antes de que sea obvio?'],
+            tip: 'Senior: conoce actores con nombre y apellidos. Tiene reputación propia en el sector. Detecta antes que nadie cuándo el sector gira. Es visible en asociaciones (EU DSO Entity, GEODE, CIDE).' }
+        }
+      },
+      {
+        id: 'sr2', name: 'Retribución regulada y circulares',
+        desc: 'Circulares CNMC (1/2021, 1/2024, 8/2025, 9/2025), TOTEX, IRM, tipologías, banda 80–110%, incentivos',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['¿Has oído hablar de las circulares de la CNMC? ¿Qué es la CNMC?',
+                '¿Qué es la retribución regulada? ¿Qué diferencia hay con un precio de mercado libre?'],
+            tip: 'Conoce la CNMC como regulador pero no las circulares ni el mecanismo de retribución regulada.' },
+          2: { label: 'Sitúa las circulares clave',
+            q: ['¿Qué circulares de la CNMC conoces y de qué trata cada una?',
+                '¿Qué es la retribución regulada de distribución y qué diferencia hay entre OPEX y CAPEX en ese contexto?'],
+            tip: 'Junior: sitúa las circulares clave (1/2021, 1/2024, 8/2025, 9/2025) y entiende retribución regulada, OPEX/CAPEX y periodo regulatorio a nivel conceptual. Le falta conectarlo con las implicaciones de negocio.' },
+          3: { label: 'Extrae lo que aplica al cliente',
+            q: ['Un cliente te pregunta cómo le afecta la Circular 1/2024. ¿Qué le dices?',
+                '¿Qué es el IRM y cómo afecta a la retribución de un DSO que ha invertido por encima de lo previsto?'],
+            tip: 'Extrae lo que aplica a un cliente concreto. Maneja IRM, tipologías Tipo 0/1/2/IBO, vidas útiles, banda 80–110% e incentivos de pérdidas y calidad.' },
+          4: { label: 'Entiende el impacto de negocio y recomienda',
+            q: ['¿Cómo gana dinero un DSO? ¿Qué palancas tiene para maximizar su retribución dentro del marco regulatorio?',
+                '¿Cómo afecta el TOTEX a las decisiones de inversión de un DSO? ¿Qué priorizarías tú y por qué?'],
+            tip: 'Mid: entiende cómo gana dinero un DSO, aplica la normativa a casos reales y toma decisiones sabiendo qué es lo mejor para el DSO. No solo interpreta, recomienda.' },
+          5: { label: 'Optimiza el impacto regulatorio',
+            q: ['¿Cómo llevarías un Diagnóstico de Impacto Retributivo end-to-end para un DSO mediano?',
+                '¿Cómo construyes el argumentario para inversiones excepcionales (art. 8.7) ante la CNMC?'],
+            tip: 'Senior: optimiza decisiones para maximizar impacto regulatorio. Lleva el DIR end-to-end, diseña planes directores y construye argumentarios ante CNMC. En 48h sabe qué cambia una circular nueva para cada cliente.' }
+        }
+      },
+      {
+        id: 'sr3', name: 'Aplicación normativa a casos concretos',
+        desc: 'Conectar la norma con proyectos de inversión, acceso de renovables, calidad, planificación y decisiones del DSO',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['¿Sabes qué es el TIEPI y si tiene consecuencias para la empresa que lo incumple?',
+                '¿Qué trámites necesita una empresa para conectar una instalación solar a la red de distribución?'],
+            tip: 'Conoce el concepto pero no la normativa concreta ni las consecuencias de incumplirla.' },
+          2: { label: 'Interpreta la norma en casos simples',
+            q: ['Una distribuidora tiene TIEPI de 6h cuando el límite es 3h. ¿Qué normativa entra en juego y qué consecuencias tiene?',
+                '¿Qué procedimiento sigue una empresa para conectar un parque solar de 10 MW a la red de distribución?'],
+            tip: 'Junior: interpreta la norma en casos simples. Identifica qué circular aplica aunque no sabe calcular el impacto económico exacto.' },
+          3: { label: 'Aplica con criterio',
+            q: ['¿Cómo afecta la inversión no reconocida por la CNMC a la retribución futura de un DSO?',
+                '¿Qué diferencia hay entre una autorización de instalación y una de explotación? ¿Por qué importa en un proyecto real?'],
+            tip: 'Aplica la normativa con criterio en casos concretos. Sabe que no toda inversión se reconoce y por qué.' },
+          4: { label: 'Recomienda la mejor opción para el DSO',
+            q: ['Un DSO quiere invertir 50M€ en automatización de red. ¿Cómo le ayudas a estructurar la inversión para maximizar el reconocimiento regulatorio?',
+                '¿Cómo usarías el marco normativo para identificar oportunidades de mejora retributiva para un cliente concreto?'],
+            tip: 'Mid: no solo aplica la norma, recomienda qué hacer para que el DSO maximice su retribución. La recomendación es accionable y el cliente puede decidir con ella.' },
+          5: { label: 'Diseña posiciones ante el regulador',
+            q: ['Un cliente quiere justificar ante la CNMC un plan de inversiones de 200M€. ¿Cómo construyes el argumentario?',
+                '¿Cómo diseñas un Plan Director defendible ante CNMC? ¿Qué diferencia hay entre un plan técnico y uno regulatoriamente sólido?'],
+            tip: 'Senior: construye posiciones ante CNMC, diseña planes directores y argumentarios para inversiones excepcionales. Define la posición Gridfy en consultas públicas y grupos de trabajo.' }
+        }
+      },
+      {
+        id: 'sr4', name: 'Sensibilidad regulatoria',
+        desc: 'Anticipar cambios normativos, identificar exposición regulatoria y usarla como criterio de decisión estratégica',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['¿Qué es el riesgo regulatorio? ¿Puedes darme un ejemplo de algo que haya pasado en el sector eléctrico?',
+                '¿Cómo afecta la incertidumbre regulatoria a las decisiones de inversión de una empresa?'],
+            tip: 'Conoce el concepto genérico de riesgo regulatorio pero no tiene ejemplos del sector eléctrico.' },
+          2: { label: 'Reconoce el riesgo regulatorio',
+            q: ['¿Qué pasó con la moratoria renovable de 2012 y qué lección tiene para un inversor en el sector hoy?',
+                '¿Cómo afecta la incertidumbre sobre el próximo periodo regulatorio a las decisiones de inversión de un DSO?'],
+            tip: 'Junior: conoce el concepto de riesgo regulatorio y algún caso histórico. No sabe cuantificarlo ni usarlo como criterio de decisión.' },
+          3: { label: 'Monitoriza señales tempranas',
+            q: ['¿Cómo monitorizarías cambios normativos relevantes para los clientes de Gridfy de forma sistemática?',
+                '¿Qué señales vigilarías para anticipar un cambio en la metodología retributiva antes de que se publique?'],
+            tip: 'Tiene un sistema de seguimiento de señales tempranas: consultas públicas, posiciones del ministerio, directivas europeas. No espera a la resolución para actuar.' },
+          4: { label: 'Incorpora el riesgo en las recomendaciones',
+            q: ['Un DSO quiere invertir 100M€ en los próximos 3 años. ¿Cómo incorporas el riesgo regulatorio en tu recomendación de timing y estructura de la inversión?',
+                '¿Qué marco regulatorio europeo tomarías como referencia para anticipar la evolución del español?'],
+            tip: 'Mid: incorpora el riesgo regulatorio como variable explícita en sus recomendaciones. Compara marcos europeos (UK RIIO, Alemania ARegV, Francia TURPE) para anticipar tendencias.' },
+          5: { label: 'Define la posición Gridfy',
+            q: ['¿Cómo posicionarías a Gridfy ante una revisión profunda del marco retributivo en los próximos dos años?',
+                '¿Cómo traduces una tendencia regulatoria europea en una oportunidad o riesgo concreto para los clientes de Gridfy?'],
+            tip: 'Senior: define la posición Gridfy en sandboxes, consultas públicas y grupos de trabajo. Lee una circular nueva y en 48h sabe qué implica para cada cliente.' }
+        }
+      },
+      {
+        id: 'sr5', name: 'Traducción técnico-negocio',
+        desc: 'Conectar un problema técnico de red con sus consecuencias económicas, regulatorias y estratégicas para el DSO',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['¿Qué consecuencias tiene para una distribuidora tener muchas averías? ¿Solo técnicas?',
+                '¿Puedes explicarme cómo conectas un problema técnico de red con el negocio de la distribuidora?'],
+            tip: 'Ve las consecuencias técnicas pero no conecta con el negocio o la regulación de forma espontánea.' },
+          2: { label: 'Conecta técnico con negocio básico',
+            q: ['Si el TIEPI de una zona empeora, ¿qué consecuencias concretas tiene para el DSO más allá de lo técnico?',
+                '¿Qué impacto tiene tener muchas averías en una zona urbana vs rural para el negocio del DSO?'],
+            tip: 'Junior: conecta el problema técnico con sus consecuencias económicas básicas (penalización retributiva). El cliente puede entender por qué importa.' },
+          3: { label: 'Cadena técnico-regulatorio-negocio',
+            q: ['Una línea MT tiene sobrecarga crónica del 85%. ¿Qué consecuencias tiene a nivel técnico, regulatorio y de negocio si no se actúa en 3 años?',
+                '¿Cómo le explicas al director financiero de un DSO por qué envejecer los activos es un riesgo de negocio, no solo técnico?'],
+            tip: 'Articula la cadena completa: problema técnico → impacto en índices → penalización retributiva → impacto en valoración de la empresa. El interlocutor puede decidir.' },
+          4: { label: 'Genera decisiones que el cliente usa',
+            q: ['Construye el argumento para el CEO de un DSO: ¿por qué invertir ahora en digitalización de red es una decisión estratégica, no solo técnica?',
+                '¿Cómo articularías una narrativa de valor para un inversor que considera comprar un DSO español con red envejecida?'],
+            tip: 'Mid: genera análisis que el cliente DSO convierte en decisiones de inversión, regulatorias o de operación. Habla el idioma del CEO y del director financiero.' },
+          5: { label: 'Cambia cómo opera el cliente',
+            q: ['Cuéntame un caso donde un análisis tuyo cambió una decisión estratégica de un cliente DSO.',
+                '¿Cómo sabes si tu trabajo ha cambiado cómo opera el cliente o solo ha informado una reunión?'],
+            tip: 'Senior: hay clientes que operan de forma diferente gracias a su trabajo. Identifica la oportunidad estratégica antes que el cliente. El trabajo termina cuando el cliente decide.' }
+        }
+      },
+      {
+        id: 'sr6', name: 'Tendencias y posicionamiento sectorial',
+        desc: 'Smart grid, VE, flexibilidad, PNIEC, competidores, y cómo afectan al negocio de los DSOs y de Gridfy',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['¿Qué tendencias conoces que estén transformando el sector eléctrico en Europa?',
+                '¿Qué es Gridfy y en qué parte de la cadena de valor del sector eléctrico opera?'],
+            tip: 'Conoce tendencias genéricas (renovables, digitalización) pero no el posicionamiento de Gridfy ni el mapa competitivo.' },
+          2: { label: 'Conoce las tendencias y actores',
+            q: ['¿Qué tres tendencias van a transformar más el sector eléctrico en los próximos años? ¿Por qué?',
+                '¿Qué competidores de Gridfy conoces y cómo los posicionarías frente a nosotros?'],
+            tip: 'Junior: conoce las tendencias principales (renovables, VE, digitalización) y el mapa competitivo básico (Sercide, Envelio, Plexigrid). Conoce las asociaciones del sector.' },
+          3: { label: 'Entiende las implicaciones para el DSO',
+            q: ['¿Qué capacidades concretas necesita un DSO para gestionar una red con alta penetración de VE y GD?',
+                '¿Qué es la flexibilidad de la demanda y qué oportunidades abre para los DSOs y para Gridfy?'],
+            tip: 'Entiende las implicaciones operativas de las tendencias para los DSOs. Conecta las tendencias con las capacidades que Gridfy puede ofrecer.' },
+          4: { label: 'Conecta tendencias con oportunidades de Gridfy',
+            q: ['¿Qué decisiones debería tomar un DSO mediano hoy para estar bien posicionado en 2030?',
+                '¿Cómo traduciría las tendencias del sector en nuevas líneas de servicio o productos para Gridfy?'],
+            tip: 'Mid: conecta las tendencias con oportunidades concretas de negocio para Gridfy y sus clientes. Las recomendaciones son accionables.' },
+          5: { label: 'Detecta el giro antes que nadie',
+            q: ['¿Qué cuellos de botella del PNIEC ves más difíciles de resolver y qué implican para los clientes de Gridfy?',
+                '¿Cuándo fue la última vez que detectaste que el sector estaba girando hacia algo nuevo antes de que fuera obvio? ¿Cómo lo aprovechaste?'],
+            tip: 'Senior: detecta cuándo el sector gira antes que nadie. Referencia sectorial visible. Conduce relaciones con asociaciones europeas (EU DSO Entity, GEODE, CIDE).' }
+        }
+      }
+    ]
+  },
+  {
+    id: 'mgmt', label: 'Management', weight: 0.15,
+    color: 'var(--mgmt-color)', bg: 'var(--mgmt-bg)', hex: '#5A3E8C',
+    skills: [
+      {
+        id: 'm1', name: 'Estructuración de problemas',
+        desc: 'Reformular peticiones en problemas reales, construir marcos de análisis claros y reutilizables',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['Cuando te piden algo ambiguo, ¿qué haces: empiezas o preguntas?',
+                '¿Qué diferencia hay entre un problema y un síntoma? ¿Puedes darme un ejemplo de cualquier ámbito?'],
+            tip: 'Ejecuta sin preguntar o pregunta de forma poco estructurada. No distingue síntoma de causa raíz.' },
+          2: { label: 'Sigue el marco sin perderse',
+            q: ['Un cliente te dice "analiza la red". ¿Qué preguntas haces antes de empezar?',
+                '¿Cuál es la diferencia entre un síntoma y el problema real? Dame un ejemplo del sector eléctrico.'],
+            tip: 'Junior: pregunta antes de ejecutar. Distingue síntoma de causa raíz aunque necesita ayuda para estructurar el análisis completo. Ejecuta con calidad y consistencia.' },
+          3: { label: 'Estructura con hipótesis',
+            q: ['¿Cómo estructurarías el análisis de por qué un DSO tiene TIEPI alto en una zona? ¿Cuáles son las hipótesis y cómo las testeas?',
+                '¿Cómo gestionas cuando a mitad de proyecto el cliente te da información que cambia el diagnóstico?'],
+            tip: 'Estructura el análisis en hipótesis paralelas y las testa de forma ordenada. Gestiona cambios de alcance sin que el proyecto se descarrile.' },
+          4: { label: 'Diseña análisis autónomamente',
+            q: ['¿Tienes algún framework propio para estructurar problemas de consulting de DSOs? Descríbemelo con un ejemplo real.',
+                '¿Cómo te aseguras de que el análisis que haces termina en una decisión del cliente, no en un informe que nadie usa?'],
+            tip: 'Mid: diseña el análisis completo sin que nadie se lo defina. El trabajo no termina cuando se envía el informe — termina cuando el cliente ha tomado una decisión con él.' },
+          5: { label: 'Formula el problema mejor que el cliente',
+            q: ['Cuéntame un caso donde definiste el problema real de un cliente mejor que él mismo. ¿Cómo lo gestionaste?',
+                '¿Cómo capturas el aprendizaje de un proyecto para que el siguiente proyecto similar tarde menos en estructurarse?'],
+            tip: 'Senior: lidera proyectos y define el enfoque y los conceptos de trabajo. Formula el problema de negocio que hay detrás de la petición técnica. El cliente cambia cómo opera.' }
+        }
+      },
+      {
+        id: 'm2', name: 'Criterio y priorización',
+        desc: 'Decisiones con información incompleta, anteponer las entregas de negocio, excelencia basada en datos',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['¿Cómo organizas tu trabajo cuando tienes muchas tareas a la vez?',
+                '¿Has tenido que avisar alguna vez de que no ibas a llegar a un plazo? ¿Cómo lo gestionaste?'],
+            tip: 'Organización básica pero reactiva. Avisa tarde o no avisa. No tiene criterio de priorización.' },
+          2: { label: 'Ejecuta en plazo y avisa',
+            q: ['¿Cómo priorizas cuando tienes varias tareas con el mismo deadline?',
+                '¿Cuándo fue la última vez que avisaste a tiempo de que no ibas a llegar a algo? ¿Qué hiciste?'],
+            tip: 'Junior: cumple sus entregables en plazo. Avisa antes si no llega. Pide ayuda pronto en vez de bloquearse. Ejecuta con calidad.' },
+          3: { label: 'Se gestiona con autonomía',
+            q: ['¿Cómo priorizas tu trabajo para anticiparte a las entregas de negocio sin que nadie te lo diga?',
+                '¿Cómo decides qué no hacer cuando tienes más trabajo del que puedes abordar?'],
+            tip: 'Mid: se gestiona de forma autónoma y prioriza anticipándose a las entregas de negocio. No espera que le empujen. Decide qué no hacer.' },
+          4: { label: 'Prioriza con criterio de impacto',
+            q: ['Dame un ejemplo de una decisión difícil que tomaste con información incompleta. ¿Qué criterio usaste?',
+                '¿Cómo distingues entre una mejora que tiene impacto real en el cliente y una que es incremental?'],
+            tip: 'Toma decisiones con criterio de impacto sobre el cliente y el negocio. No solo prioriza tareas — prioriza según lo que más cambia para el DSO.' },
+          5: { label: 'Lidera y define el enfoque',
+            q: ['¿Cómo defines el enfoque de un proyecto cuando no hay una respuesta obvia sobre qué hacer?',
+                '¿Cómo aseguras la excelencia basada en datos y orientada a la decisión del cliente en un equipo que llevas?'],
+            tip: 'Senior: lidera proyectos y define el enfoque y los conceptos de trabajo. Aplica y transmite el estándar transversal de Gridfy: excelencia basada en datos orientada a la decisión del cliente.' }
+        }
+      },
+      {
+        id: 'm3', name: 'Comunicación con cliente',
+        desc: 'Claridad, adaptación al interlocutor, comunicar con confianza, gestionar conversaciones difíciles',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['¿Te resulta fácil explicar cosas técnicas a personas sin conocimiento técnico? Dame un ejemplo.',
+                '¿Cómo reaccionas cuando recibes feedback crítico sobre tu trabajo?'],
+            tip: 'Comunicación poco clara o muy técnica. Recibe el feedback con defensividad o sin incorporarlo.' },
+          2: { label: 'Comunica con claridad',
+            q: ['Explícame qué es el TIEPI como si fueras el director financiero de un DSO, sin conocimientos técnicos.',
+                'Dame el resumen de un análisis que hayas hecho en máximo 3 frases.'],
+            tip: 'Junior: comunica con claridad. Hace preguntas antes de bloquearse. Trato profesional con el cliente. Recibe feedback sin defensividad.' },
+          3: { label: 'Lleva reuniones técnicas',
+            q: ['¿Cómo llevas una reunión técnica con un cliente como interlocutor principal?',
+                '¿Cómo escribes un email post-reunión que el cliente lea y que cierre algo concreto?'],
+            tip: 'Mid: lleva una reunión técnica como interlocutor principal. Escribe propuestas y emails post-reunión que no hay que reescribir. Dice "no sé, te contesto el viernes" sin que se note inseguridad.' },
+          4: { label: 'Busca la confianza del cliente',
+            q: ['¿Cómo comunicas con un cliente buscando activamente generar su confianza, no solo informarle?',
+                '¿Cómo gestionas una conversación difícil con un cliente (cambio de alcance, error de Gridfy) manteniendo la relación?'],
+            tip: 'Comunica de forma clara con el cliente buscando su confianza. Gestiona scope creep y conversaciones difíciles con la relación intacta.' },
+          5: { label: 'Influye en decisiones de dirección',
+            q: ['Cuéntame una reunión de dirección que condujiste y de la que saliste con una decisión. ¿Cómo lo preparaste?',
+                '¿Cómo hablas en un foro sectorial o en CNMC de forma que representas a Gridfy y no solo a ti mismo?'],
+            tip: 'Senior: conduce reuniones de dirección y sale con la decisión. Gestiona conversaciones difíciles. Su presencia en una reunión cambia el resultado. Habla en foros sectoriales.' }
+        }
+      },
+      {
+        id: 'm4', name: 'Orientación a cliente',
+        desc: 'Entender qué necesita el cliente más allá de lo que pide, gestionar expectativas, ownership de la relación',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['Cuando empiezas a trabajar con un cliente o usuario, ¿qué haces primero?',
+                '¿Puedes darme un ejemplo de cuando lo que alguien pedía no era lo que realmente necesitaba?'],
+            tip: 'Ejecuta la petición literal sin entender el propósito. No tiene instinto de preguntar el para qué.' },
+          2: { label: 'Trato profesional',
+            q: ['Un cliente te pide "un análisis de la red". ¿Qué haces primero?',
+                '¿Qué diferencia hay entre lo que un cliente pide y lo que realmente necesita? Dame un ejemplo.'],
+            tip: 'Junior: pregunta antes de ejecutar. Trato profesional. No interpreta la petición literalmente sin entender el propósito.' },
+          3: { label: 'Gestiona expectativas',
+            q: ['A mitad de proyecto detectas que lo que el cliente ha pedido no resolverá su problema real. ¿Qué haces?',
+                '¿Cómo gestionas a un cliente que siempre quiere más de lo que el alcance contempla?'],
+            tip: 'Gestiona expectativas y scope creep de forma proactiva. Comunica pronto cuando hay una desviación. No deja que los problemas se acumulen.' },
+          4: { label: 'Lleva la relación con autonomía',
+            q: ['¿Cómo llevas la cadencia bisemanal de un proyecto con un cliente sin que nadie te empuje?',
+                '¿Cómo te aseguras de que la relación con el cliente es sana y no depende de que todo vaya bien?'],
+            tip: 'Mid: lleva un workstream o proyecto de principio a fin. Gestiona la cadencia sin que nadie empuje. La relación con el cliente es suya, no del proyecto.' },
+          5: { label: 'Ownership de la cuenta',
+            q: ['¿Cómo llevas la relación con un cliente completo: entregables, renovación, salud de la cuenta?',
+                '¿Cómo formas a un junior en orientación al cliente en el día a día sin que sea un proceso formal?'],
+            tip: 'Senior: lleva cuenta completa de uno o varios clientes. Gestiona scope creep, renovación y salud de la cuenta. Forma a juniors en su día a día sin que se lo pidan.' }
+        }
+      },
+      {
+        id: 'm5', name: 'Mentalidad de sistema',
+        desc: 'Pensar en proceso, reutilización y escalado; reducir dependencia individual; transferir conocimiento',
+        guide: {
+          1: { label: 'Reconocimiento básico',
+            q: ['Cuando terminas un proyecto o una tarea, ¿qué haces con el conocimiento que has generado?',
+                '¿Has reutilizado algo de un trabajo anterior para hacerte la vida más fácil? ¿Cómo?'],
+            tip: 'No tiene ningún hábito de documentación o reutilización. El conocimiento se pierde cuando termina la tarea.' },
+          2: { label: 'Documenta y reutiliza',
+            q: ['Cuando terminas un análisis, ¿qué haces con él? ¿Lo guardas, lo documentas, lo compartes?',
+                '¿Has reutilizado algo de un proyecto anterior para acelerar uno nuevo? Dame un ejemplo.'],
+            tip: 'Junior: tiene algún hábito de gestión del conocimiento. Reutiliza aunque sea de forma informal.' },
+          3: { label: 'Crea procesos reutilizables',
+            q: ['¿Has creado o mejorado alguna plantilla, checklist o proceso en un equipo? ¿Qué problema resolvía?',
+                '¿Cómo documentarías un análisis de datos de red para que otro analista lo replique sin preguntarte nada?'],
+            tip: 'Crea activos reutilizables con impacto medible. Documenta pensando en el siguiente usuario.' },
+          4: { label: 'Reduce la dependencia individual',
+            q: ['¿Cómo organizas el conocimiento de un proyecto para que no se pierda cuando alguien se va?',
+                '¿Cómo te aseguras de que el equipo no depende de ti para resolver problemas que deberían poder resolver solos?'],
+            tip: 'Mid: coordina a un junior puntualmente. Transfiere conocimiento de forma sistemática. El equipo puede avanzar sin él.' },
+          5: { label: 'Eleva la capacidad del equipo',
+            q: ['Cuéntame algo que hayas sistematizado en un equipo con impacto medible: tiempo ahorrado, errores reducidos, capacidad ampliada.',
+                '¿Cómo defines qué cambios elevan de verdad al equipo y cuáles son ruido?'],
+            tip: 'Senior: tiene responsabilidad sobre la línea de servicio o vertical. Contrata, hace crecer al equipo y define carrera. Su impacto es sistémico, no individual.' }
+        }
+      }
+    ]
+  }
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let currentId = null;
+let openGuides = {};
+
+function blankState() {
+  const sc = {};
+  BLOCKS.forEach(b => b.skills.forEach(s => sc[s.id] = 0));
+  SOFT_BLOCKS.forEach(b => b.skills.forEach(s => sc[s.id] = 0));
+  LEAD_BLOCKS.forEach(b => b.skills.forEach(s => sc[s.id] = 0));
+  return {
+    id: Date.now().toString(),
+    meta: { nombre:'', contexto:'', nivelObj:'', rolBuscado:'', evaluador:'', fecha: new Date().toISOString().split('T')[0], confianza:'' },
+    scores: sc,
+    notes: { fortalezas:'', mejora:'', obs:'', rec:'' }
+  };
+}
+
+function loadAll() {
+  try { return JSON.parse(localStorage.getItem('mx_candidates') || '[]'); } catch { return []; }
+}
+function saveAll(list) { localStorage.setItem('mx_candidates', JSON.stringify(list)); }
+
+function currentData() {
+  const list = loadAll();
+  return list.find(c => c.id === currentId) || null;
+}
+
+function migrateScores(data) {
+  [...BLOCKS, ...SOFT_BLOCKS, ...LEAD_BLOCKS].forEach(b => b.skills.forEach(s => {
+    if (data.scores[s.id] === undefined) data.scores[s.id] = 0;
+  }));
+  return data;
+}
+
+function upsert(data) {
+  migrateScores(data);
+  const list = loadAll();
+  const idx = list.findIndex(c => c.id === data.id);
+  if (idx >= 0) list[idx] = data;
+  else list.push(data);
+  saveAll(list);
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+function init() {
+  renderBlocks();
+  renderSoftBlocks();
+  renderGuia();
+  const list = loadAll();
+  if (list.length === 0) {
+    const d = blankState();
+    upsert(d);
+    currentId = d.id;
+  } else {
+    currentId = list[list.length - 1].id;
+  }
+  loadCandidate(currentId);
+  renderCandList();
+}
+
+
+// ─── SOFT / LEAD BLOCKS ──────────────────────────────────────────────────────
+function renderSoftBlocks() {
+  const sc = document.getElementById('soft-blocks-container');
+  const lc = document.getElementById('lead-blocks-container');
+  if (sc) {
+    sc.innerHTML = '';
+    SOFT_BLOCKS.forEach(b => {
+      const div = document.createElement('div');
+      div.className = 'block-section';
+      div.id = 'block-' + b.id;
+      div.innerHTML = `
+        <div class="block-header">
+          <div class="block-header-left">
+            <div class="block-accent" style="background:${b.color}"></div>
+            <div><div class="block-title">${b.label}</div></div>
+            <span class="block-weight" style="background:${b.bg};color:${b.color}">Soft · 8 skills</span>
+          </div>
+          <div class="block-score-display" id="bscore-${b.id}" style="color:${b.color}">—</div>
+        </div>
+        ${b.skills.map(s => renderSkill(s, b)).join('')}
+      `;
+
+      sc.appendChild(div);
+    });
+  }
+  if (lc) {
+    lc.innerHTML = '';
+    LEAD_BLOCKS.forEach(b => {
+      const div = document.createElement('div');
+      div.className = 'block-section';
+      div.id = 'block-' + b.id;
+      div.innerHTML = `
+        <div class="block-header">
+          <div class="block-header-left">
+            <div class="block-accent" style="background:${b.color}"></div>
+            <div><div class="block-title">${b.label}</div></div>
+            <span class="block-weight" style="background:${b.bg};color:${b.color}">Opcional · 4 skills</span>
+          </div>
+          <div class="block-score-display" id="bscore-${b.id}" style="color:${b.color}">—</div>
+        </div>
+        ${b.skills.map(s => renderSkill(s, b)).join('')}
+      `;
+      lc.appendChild(div);
+    });
+  }
+}
+
+// ─── BLOCKS ──────────────────────────────────────────────────────────────────
+function renderBlocks() {
+  const c = document.getElementById('blocks-container');
+  c.innerHTML = '';
+  BLOCKS.forEach(b => {
+    const div = document.createElement('div');
+    div.className = 'block-section';
+    div.id = 'block-' + b.id;
+    div.innerHTML = `
+      <div class="block-header">
+        <div class="block-header-left">
+          <div class="block-accent" style="background:${b.color}"></div>
+          <div>
+            <div class="block-title">${b.label}</div>
+          </div>
+          <span class="block-weight" style="background:${b.bg};color:${b.color}">Peso ${Math.round(b.weight*100)}%</span>
+        </div>
+        <div class="block-score-display" id="bscore-${b.id}" style="color:${b.color}">—</div>
+      </div>
+      ${b.skills.map(s => renderSkill(s, b)).join('')}
+    `;
+    c.appendChild(div);
+  });
+}
+
+function renderSkill(s, b) {
+  const esc = str => (str||'').replace(/`/g,"'").replace(/\${/g,'&#36;{');
+
+  // Detect which guide format this skill uses:
+  // Format A (hard skills from Excel): guide[1..5] with q:[], tip
+  // Format B (soft/lead skills):       guide[2,5,8] with qk, qc, ak_ok, ak_bad, ac_ok, ac_bad, hint
+  const firstKey = Object.keys(s.guide||{})[0];
+  const firstEntry = s.guide[firstKey] || {};
+  const isFormatA = Array.isArray(firstEntry.q);
+
+  let guideHTML = '';
+  if (isFormatA) {
+    // ── Format A: 5 levels, q[] array, tip ────────────────────────────────────
+    const LEVEL_KEYS = [1,2,3,4,5].filter(k => s.guide[k]);
+    guideHTML = `
+      <div class="guide-panel">
+        <div class="guide-panel-header">
+          ${esc(s.name)}
+          <span style="font-weight:400;opacity:0.6;margin-left:8px">niveles 1–5 · anclas en 2 · 5</span>
+        </div>
+        <div class="guide-levels cols-5">
+          ${LEVEL_KEYS.map(lv => {
+            const g = s.guide[lv] || {};
+            const col = levelColor([1,2,3,4,5].indexOf(lv) === 0 ? 2 :
+                        [1,2,3,4,5].indexOf(lv) <= 2 ? 5 : 8);
+            return `<div class="guide-level" id="gl-${s.id}-${lv}">
+              <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px">
+                <div class="guide-level-num" style="color:${col}">${lv}</div>
+              </div>
+              <div class="guide-level-label" style="color:${col}">${esc(g.label)}</div>
+              <div class="guide-level-q">
+                ${(g.q||[]).map(q => `<div style="font-size:11px;color:var(--text2);margin-bottom:5px;line-height:1.4;
+                  padding-left:8px;border-left:2px solid ${col}40">↗ ${esc(q)}</div>`).join('')}
+                ${g.tip ? `<div style="font-size:10px;color:var(--text3);margin-top:6px;padding-top:6px;
+                  border-top:1px dashed var(--border);font-style:italic;line-height:1.35">${esc(g.tip)}</div>` : ''}
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  } else {
+    // ── Format B: 3 anchors (2,5,8), qk + qc + answers ───────────────────────
+    const ANCHORS = [2,5,8].filter(k => s.guide[k]);
+    const ranges  = {2:'1–3', 5:'4–6', 8:'7–10'};
+    const anchorCols = {2: levelColor(2), 5: levelColor(5), 8: levelColor(8)};
+    guideHTML = `
+      <div class="guide-panel">
+        <div class="guide-panel-header">
+          ${esc(s.name)}
+          <span style="font-weight:400;opacity:0.6;margin-left:8px">anclas 2 · 5 · 8 — interpola según proximidad</span>
+        </div>
+        <div class="guide-levels">
+          ${ANCHORS.map(anchorVal => {
+            const g = s.guide[anchorVal] || {};
+            const col = anchorCols[anchorVal];
+            const rid = `${s.id}-a${anchorVal}`;
+            return `<div class="guide-level" id="gl-${s.id}-${anchorVal}">
+              <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+                <div class="guide-level-num" style="color:${col}">${anchorVal}</div>
+                <div class="guide-level-range">${ranges[anchorVal]}</div>
+              </div>
+              <div class="guide-level-label" style="color:${col}">${esc(g.label)}</div>
+              ${g.qk ? `<div class="guide-q-block">
+                <div class="guide-q-type">Conocimiento</div>
+                <div class="guide-q-text">${esc(g.qk)}</div>
+                <button class="guide-ans-toggle ok" onclick="toggleAns('${rid}-k-ok',this)">✓ Respuesta correcta</button>
+                <button class="guide-ans-toggle bad" onclick="toggleAns('${rid}-k-bad',this)">✗ Error típico</button>
+                <div class="guide-ans-box ok" id="${rid}-k-ok">${esc(g.ak_ok)}</div>
+                <div class="guide-ans-box bad" id="${rid}-k-bad">${esc(g.ak_bad)}</div>
+              </div>` : ''}
+              ${g.qc ? `<div class="guide-q-block">
+                <div class="guide-q-type">Caso práctico</div>
+                <div class="guide-q-text">${esc(g.qc)}</div>
+                <button class="guide-ans-toggle ok" onclick="toggleAns('${rid}-c-ok',this)">✓ Respuesta correcta</button>
+                <button class="guide-ans-toggle bad" onclick="toggleAns('${rid}-c-bad',this)">✗ Error típico</button>
+                <div class="guide-ans-box ok" id="${rid}-c-ok">${esc(g.ac_ok)}</div>
+                <div class="guide-ans-box bad" id="${rid}-c-bad">${esc(g.ac_bad)}</div>
+              </div>` : ''}
+              <div class="guide-score-hint">${esc(g.hint)}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }
+
+  return `<div class="skill-item" id="skill-item-${s.id}">
+    <div class="skill-main">
+      <div class="skill-left">
+        <div class="skill-name">${esc(s.name)}</div>
+        <div class="skill-desc">${esc(s.desc)}</div>
+      </div>
+      <div class="skill-right">
+        <button class="guide-btn" onclick="toggleGuide('${s.id}')" id="gbtn-${s.id}">Ver guía ↓</button>
+        <div class="stars" id="stars-${s.id}">
+          ${[1,2,3,4,5,6,7,8,9,10].map(i => `
+            <button class="star-btn s${i}${[2,5,8].includes(i)?' anchor':''}" id="star-${s.id}-${i}"
+              onclick="setScore('${s.id}',${i})"
+              title="${getStarTip(i, s)}"
+            >${i}</button>`).join('')}
+        </div>
+        <div class="score-display" id="snum-${s.id}">—</div>
+      </div>
+    </div>
+    <div id="guide-${s.id}" style="display:none">
+      ${guideHTML}
+    </div>
+  </div>`;
+}
+
+function toggleAns(id, btn) {
+  const box = document.getElementById(id);
+  if (!box) return;
+  const open = box.classList.contains('visible');
+  box.classList.toggle('visible', !open);
+  btn.style.opacity = open ? '1' : '0.5';
+}
+
+function getStarTip(i, s) {
+  const firstKey = Object.keys(s.guide||{})[0];
+  const isFormatA = Array.isArray((s.guide[firstKey]||{}).q);
+  if (isFormatA) {
+    // Hard skill: map 1-10 to 1-5 levels
+    const lv = Math.ceil(i / 2);
+    const g = s.guide[lv] || {};
+    return `${i} — nivel ${lv} (${g.label||''})`;
+  }
+  // Soft skill: anchors 2, 5, 8
+  const anchor = [2,5,8].includes(i) ? (s.guide[i] || {}) : null;
+  if (anchor && anchor.label) return `${i} · ${anchor.label}`;
+  const near = i <= 3 ? 2 : i <= 6 ? 5 : 8;
+  const g = s.guide[near] || {};
+  return `${i} — zona ancla ${near} (${g.label||''})`;
+}
+function levelColor(i) {
+  const colors = {
+    1:'var(--r1)', 2:'var(--r2)', 3:'var(--r3)', 4:'var(--r4)',
+    5:'var(--r5)', 6:'var(--r6)', 7:'var(--r7)', 8:'var(--r8)',
+    9:'var(--r9)', 10:'var(--r10)'
+  };
+  return colors[i] || 'var(--text3)';
+}
+
+function toggleGuide(sid) {
+  const el = document.getElementById('guide-' + sid);
+  const btn = document.getElementById('gbtn-' + sid);
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  btn.textContent = open ? 'Ver guía ↓' : 'Ocultar ↑';
+  openGuides[sid] = !open;
+  if (!open) {
+    const data = currentData();
+    if (data && data.scores[sid]) highlightGuideLevel(sid, data.scores[sid]);
+  }
+}
+
+function highlightGuideLevel(sid, val) {
+  const skill = [...BLOCKS, ...SOFT_BLOCKS, ...LEAD_BLOCKS]
+    .flatMap(b => b.skills).find(s => s.id === sid);
+  if (!skill) return;
+  const firstKey = Object.keys(skill.guide||{})[0];
+  const isFormatA = Array.isArray((skill.guide[firstKey]||{}).q);
+
+  if (isFormatA) {
+    // Hard skills: highlight the level that matches
+    [1,2,3,4,5].forEach(i => {
+      const el = document.getElementById('gl-' + sid + '-' + i);
+      if (el) el.classList.toggle('active', i === val);
+    });
+  } else {
+    // Soft skills: highlight nearest anchor
+    [2,5,8].forEach(i => {
+      const el = document.getElementById('gl-' + sid + '-' + i);
+      const active = (val <= 3 && i === 2) || (val >= 4 && val <= 6 && i === 5) || (val >= 7 && i === 8);
+      if (el) el.classList.toggle('active', active);
+    });
+  }
+}
+
+// ─── SCORES ──────────────────────────────────────────────────────────────────
+function setScore(sid, val) {
+  const data = currentData();
+  if (!data) return;
+  data.scores[sid] = val;
+  upsert(data);
+  renderStars(sid, val);
+  document.getElementById('snum-' + sid).textContent = val;
+  highlightGuideLevel(sid, val);
+  updateBlockScore(blockOfSkill(sid));
+  updateSummary();
+  updateNavScores();
+}
+
+function blockOfSkill(sid) {
+  return [...BLOCKS, ...SOFT_BLOCKS, ...LEAD_BLOCKS].find(b => b.skills.some(s => s.id === sid));
+}
+
+function renderStars(sid, val) {
+  for (let i = 1; i <= 10; i++) {
+    const btn = document.getElementById('star-' + sid + '-' + i);
+    if (!btn) continue;
+    btn.classList.toggle('on', i <= val);
+  }
+}
+
+function blockScore(b, scoresObj) {
+  const anyWeight = b.skills.some(s => s.weight != null);
+  if (anyWeight) {
+    // Weighted average — skills with no score don't contribute but their weight still counts
+    // (so a blank skill pulls the score down, same as a 0 in equal-weight mode)
+    const totalW = b.skills.reduce((a, s) => a + (s.weight || 0), 0);
+    if (!totalW) return 0;
+    const filled = b.skills.some(s => (scoresObj[s.id] || 0) > 0);
+    if (!filled) return 0;
+    const weighted = b.skills.reduce((a, s) => a + (scoresObj[s.id] || 0) * (s.weight || 0), 0);
+    return weighted / totalW;
+  }
+  // Equal-weight fallback
+  const vals = b.skills.map(s => scoresObj[s.id] || 0);
+  if (!vals.some(v => v > 0)) return 0;
+  return vals.reduce((a, c) => a + c, 0) / b.skills.length;
+}
+
+function totalScore(scoresObj) {
+  const bs = BLOCKS.map(b => blockScore(b, scoresObj) * b.weight);
+  return bs.reduce((a, c) => a + c, 0);
+}
+
+function updateBlockScore(b) {
+  const data = currentData();
+  if (!data) return;
+  const s = blockScore(b, data.scores);
+  const el = document.getElementById('bscore-' + b.id);
+  if (el) el.textContent = s > 0 ? s.toFixed(1) : '—';
+}
+
+function updateNavScores() {
+  const data = currentData();
+  if (!data) return;
+  BLOCKS.forEach(b => {
+    const s = blockScore(b, data.scores);
+    const el = document.getElementById('nav-' + b.id);
+    if (el) el.textContent = s > 0 ? s.toFixed(1) : '—';
+  });
+}
+
+// ─── NIVEL ───────────────────────────────────────────────────────────────────
+const NIVELES = [
+  { min: 8.5, label: 'Lead / potencial Lead', color: '#1A5A40', bg: '#DCF0E6' },
+  { min: 7.0, label: 'Senior',                color: '#207050', bg: '#E4F3EC' },
+  { min: 5.0, label: 'Mid',                   color: '#2A7A7A', bg: '#E2F3F3' },
+  { min: 3.5, label: 'Junior',                color: '#B07020', bg: '#FBF3E3' },
+  { min: 0,   label: 'Muy inicial / no apto', color: '#C94040', bg: '#FBE8E8' },
+];
+function getNivel(s) {
+  for (const n of NIVELES) if (s >= n.min) return n;
+  return NIVELES[NIVELES.length - 1];
+}
+
+
+// ─── DIAGNOSIS ENGINE ────────────────────────────────────────────────────────
+
+function computeGroupAvg(blocks, scoresObj) {
+  const all = blocks.flatMap(b => b.skills.map(s => scoresObj[s.id] || 0));
+  const filled = all.filter(v => v > 0);
+  if (!filled.length) return 0;
+  return all.reduce((a,c) => a+c, 0) / all.length;
+}
+
+function getSkillScore(sid, scoresObj) {
+  return scoresObj[sid] || 0;
+}
+
+function computeVariance(scoresObj) {
+  const all = [...BLOCKS, ...SOFT_BLOCKS, ...LEAD_BLOCKS]
+    .flatMap(b => b.skills.map(s => scoresObj[s.id] || 0))
+    .filter(v => v > 0);
+  if (all.length < 2) return 0;
+  const mean = all.reduce((a,c)=>a+c,0)/all.length;
+  return Math.sqrt(all.reduce((a,c)=>a+(c-mean)**2,0)/all.length);
+}
+
+function computeHardCore(scoresObj) {
+  // hard core = average of the block with highest individual average
+  const blockAvgs = BLOCKS.map(b => blockScore(b, scoresObj));
+  return blockAvgs.length ? Math.max(...blockAvgs) : 0;
+}
+
+function diagnose(data) {
+  const sc = data.scores;
+  const nivelObj  = (data.meta.nivelObj   || '').toLowerCase();
+  const rolBuscado = data.meta.rolBuscado || '';
+
+  const hardAvg  = computeGroupAvg(BLOCKS, sc);
+  const softAvg  = computeGroupAvg(SOFT_BLOCKS, sc);
+  const leadAvg  = computeGroupAvg(LEAD_BLOCKS, sc);
+  const hardCore = computeHardCore(sc);
+  const globalAvg= computeGroupAvg([...BLOCKS, ...SOFT_BLOCKS], sc);
+  const variance = computeVariance(sc);
+
+  // Individual scores
+  const com  = getSkillScore('s_com',  sc);
+  const prob = getSkillScore('s_prob', sc);
+  const crit = getSkillScore('s_crit', sc);
+  const own  = getSkillScore('s_own',  sc);
+  const col  = getSkillScore('s_col',  sc);
+  const inf  = getSkillScore('s_inf',  sc);
+  const apr  = getSkillScore('s_apr',  sc);
+  const pro  = getSkillScore('s_pro',  sc);
+  const pri  = getSkillScore('l_pri',  sc);
+  const dev  = getSkillScore('l_dev',  sc);
+  const coo  = getSkillScore('l_coo',  sc);
+
+  // Hard skill block averages for profile detection
+  const dataAvg   = blockScore(BLOCKS.find(b=>b.id==='data')   ||{skills:[]}, sc);
+  const elecAvg   = blockScore(BLOCKS.find(b=>b.id==='elec')   ||{skills:[]}, sc);
+  const secregAvg = blockScore(BLOCKS.find(b=>b.id==='secreg') ||{skills:[]}, sc);
+  
+  const mgmtAvg   = blockScore(BLOCKS.find(b=>b.id==='mgmt')   ||{skills:[]}, sc);
+
+  function critBelow(threshold, ids) {
+    return ids.filter(id => getSkillScore(id,sc) > 0 && getSkillScore(id,sc) < threshold).length;
+  }
+
+  // ── NIVEL (cascade con criterios del CEO) ────────────────────────────────
+  // Estándar transversal: excelencia basada en datos orientada a la decisión del cliente
+  //
+  // Junior  → Ejecuta con calidad y consistencia
+  // Mid     → Genera decisiones que el cliente usa (trabaja con autonomía, ayuda al cliente a decidir)
+  // Senior  → Cambia cómo el cliente opera (formula problemas, define decisiones de negocio)
+  // Lead    → Lidera línea de servicio, define carrera, responsabilidad sobre la cuenta de resultados
+
+  let nivel = 'Muy inicial';
+  let nivelSub = 'Falta base en skills críticas';
+
+  // BLOQUEANTES POR NIVEL (criterios del CEO — condición necesaria, no suficiente)
+  // "No es Junior si no ejecuta con calidad y consistencia"
+  const juniorBlock = own >= 4 && apr >= 4 && com >= 4;
+  // "No es Mid si no puede trabajar de forma autónoma y ayudar al cliente a tomar decisiones"
+  const midBlock = own >= 5 && crit >= 5 && prob >= 5 && com >= 5;
+  // "No es Senior si no define problemas y los convierte en decisiones de negocio"
+  const seniorBlock = crit >= 7 && prob >= 7 && com >= 7 && inf >= 6.5;
+
+  const juniorOk = juniorBlock && globalAvg >= 3.5 && hardCore >= 3.0;
+  const midOk    = midBlock    && globalAvg >= 5.0 && hardCore >= 5.0 && softAvg >= 4.5 &&
+                   critBelow(4, ['s_com','s_crit','s_own','s_prob']) <= 1;
+  const seniorOk = seniorBlock && globalAvg >= 6.5 && hardCore >= 6.5 && softAvg >= 6.5 &&
+                   critBelow(5, ['s_com','s_crit','s_own','s_prob','s_inf']) === 0;
+  const leadOk   = seniorOk   && softAvg >= 7.5 && leadAvg >= 7.0 && com >= 8 && crit >= 8 &&
+                   own >= 8 && col >= 8 && pri >= 7.5 && dev >= 7.5 && hardCore >= 6.5;
+
+  if (leadOk)        { nivel = 'Lead';   nivelSub = 'Lidera y define. Responsabilidad sobre la cuenta de resultados.'; }
+  else if (seniorOk) { nivel = 'Senior'; nivelSub = 'Cambia cómo el cliente opera. Formula problemas de negocio.'; }
+  else if (midOk)    { nivel = 'Mid';    nivelSub = 'Genera decisiones que el cliente usa. Trabaja con autonomía.'; }
+  else if (juniorOk) { nivel = 'Junior'; nivelSub = 'Ejecuta con calidad y consistencia. Base sólida.'; }
+
+  const NIVEL_ORDER = ['Muy inicial','Junior','Mid','Senior','Lead'];
+  const nivelIdx = NIVEL_ORDER.indexOf(nivel);
+  const objMap   = { junior:1, mid:2, senior:3, lead:4 };
+  const objIdx   = objMap[nivelObj] ?? -1;
+  if (objIdx > 0 && nivelIdx < objIdx) nivelSub = `${nivel} — por debajo del objetivo ${data.meta.nivelObj}`;
+  else if (objIdx > 0 && nivelIdx >= objIdx) nivelSub = `Cumple el nivel objetivo (${data.meta.nivelObj})`;
+
+  // ── PERFIL (7 tipos) ──────────────────────────────────────────────────────
+  // Each profile has: id, emoji, label, desc, color, bgColor
+  const PERFILES = {
+    tecnico_puro: {
+      emoji:'🔧', label:'Soluciones técnicas',
+      desc:'Muy fuerte en hard skills. Orientado a resolver problemas técnicos complejos. Soft funcional pero no es su diferenciador.',
+      color:'#2C5F8A', bg:'#EBF2F9',
+      test: () => hardAvg >= 7 && softAvg < 6.5 && hardCore >= 7.5
+    },
+    analista: {
+      emoji:'📊', label:'Analista / Data',
+      desc:'Destaca especialmente en Data y razonamiento cuantitativo. Perfil muy técnico con orientación analítica.',
+      color:'#1A6B7A', bg:'#E4F3F5',
+      test: () => dataAvg >= 7.5 && hardAvg >= 6.5 && softAvg < 7
+    },
+    cliente: {
+      emoji:'🤝', label:'Orientado a cliente',
+      desc:'Comunicación, criterio y entendimiento del problema muy altos. Conecta bien con stakeholders. Hard suficiente para ser creíble.',
+      color:'#7A3E6B', bg:'#F5EBF3',
+      test: () => com >= 7 && prob >= 7 && crit >= 7 && inf >= 6.5 && hardAvg >= 5 && softAvg >= 7
+    },
+    liderazgo: {
+      emoji:'🧭', label:'Liderazgo',
+      desc:'Leadership y soft muy altos. Capacidad de ordenar equipos, desarrollar personas y tomar decisiones con visión.',
+      color:'#3E5A8C', bg:'#EBF0F9',
+      test: () => leadAvg >= 7 && softAvg >= 7.5 && own >= 7.5 && (pri >= 7 || dev >= 7) && hardCore >= 5.5
+    },
+    equilibrado: {
+      emoji:'⚖️', label:'Consultor equilibrado',
+      desc:'Hard y soft en equilibrio sólido. Perfil versátil que puede aportar en frentes técnicos y de negocio sin pico claro en ninguno.',
+      color:'#4A7A40', bg:'#EBF5E8',
+      test: () => hardAvg >= 6 && softAvg >= 6 && Math.abs(hardAvg - softAvg) < 1.5
+    },
+    desarrollo: {
+      emoji:'🌱', label:'En desarrollo',
+      desc:'Base visible con potencial claro. Autonomía todavía limitada. Aprendizaje y ownership como señales positivas.',
+      color:'#B07020', bg:'#FBF3E3',
+      test: () => globalAvg >= 3.0 && globalAvg < 5.5
+    },
+    desequilibrado: {
+      emoji:'⚠️', label:'Perfil desequilibrado',
+      desc:'Fortalezas muy marcadas con gaps críticos. Alto riesgo de sobresalir en algunos contextos y fallar en otros.',
+      color:'#C94040', bg:'#FBE8E8',
+      test: () => variance >= 2.0 && critBelow(4,['s_com','s_crit','s_own']) > 0
+    }
+  };
+
+  let perfilId = 'equilibrado';
+  // Order matters — check most specific first
+  const perfilOrder = ['liderazgo','analista','tecnico_puro','cliente','desarrollo','desequilibrado','equilibrado'];
+  for (const pid of perfilOrder) {
+    if (PERFILES[pid].test()) { perfilId = pid; break; }
+  }
+  const perfil    = PERFILES[perfilId];
+  const perfilSub = perfil.desc;
+
+  // ── ROL BUSCADO: IDEAL PROFILES ──────────────────────────────────────────
+  // Each rol defines minimum thresholds for key dimensions: { label, min, skillId/dim }
+  // dim can be: 'hardAvg','softAvg','leadAvg','hardCore','dataAvg','elecAvg','secregAvg','mgmtAvg',
+  //             or a skill id like 's_com'
+  const ROL_PERFILES = {
+    'Analista / Técnico especialista': {
+      match: ['tecnico_puro','analista'],
+      dims: [
+        { label:'Hard skills (avg)',     dim:'hardAvg',   min:6.5, weight:'crítico' },
+        { label:'Data / Analítico',      dim:'dataAvg',   min:7.0, weight:'crítico' },
+        { label:'Electricidad',          dim:'elecAvg',   min:6.0, weight:'importante' },
+        { label:'Normativa',             dim:'secregAvg',   min:5.5, weight:'importante' },
+        { label:'Comunicación',          dim:'s_com',     min:5.0, weight:'básico' },
+        { label:'Estructuración',        dim:'s_prob',    min:5.0, weight:'básico' },
+      ]
+    },
+    'Consultor técnico-negocio': {
+      match: ['equilibrado','tecnico_puro'],
+      dims: [
+        { label:'Hard skills (avg)',     dim:'hardAvg',   min:6.0, weight:'crítico' },
+        { label:'Sector / negocio',      dim:'secregAvg', min:6.0, weight:'crítico' },
+        { label:'Comunicación',          dim:'s_com',     min:6.5, weight:'crítico' },
+        { label:'Criterio',              dim:'s_crit',    min:6.0, weight:'importante' },
+        { label:'Entend. del problema',  dim:'s_prob',    min:6.0, weight:'importante' },
+        { label:'Soft skills (avg)',     dim:'softAvg',   min:6.0, weight:'importante' },
+      ]
+    },
+    'Consultor orientado a cliente': {
+      match: ['cliente','equilibrado'],
+      dims: [
+        { label:'Comunicación',          dim:'s_com',     min:7.0, weight:'crítico' },
+        { label:'Entend. del problema',  dim:'s_prob',    min:7.0, weight:'crítico' },
+        { label:'Criterio',              dim:'s_crit',    min:6.5, weight:'crítico' },
+        { label:'Influencia',            dim:'s_inf',     min:6.5, weight:'importante' },
+        { label:'Hard skills (avg)',     dim:'hardAvg',   min:5.5, weight:'básico' },
+        { label:'Sector / negocio',      dim:'secregAvg', min:5.5, weight:'básico' },
+      ]
+    },
+    'Project / Delivery Lead': {
+      match: ['liderazgo'],
+      dims: [
+        { label:'Leadership (avg)',      dim:'leadAvg',   min:7.5, weight:'crítico' },
+        { label:'Ownership',             dim:'s_own',     min:8.0, weight:'crítico' },
+        { label:'Comunicación',          dim:'s_com',     min:7.5, weight:'crítico' },
+        { label:'Criterio',              dim:'s_crit',    min:7.0, weight:'importante' },
+        { label:'Coordinación',          dim:'l_coo',     min:7.0, weight:'importante' },
+        { label:'Hard skills (avg)',     dim:'hardAvg',   min:6.0, weight:'básico' },
+      ]
+    },
+    'Perfil en formación': {
+      match: ['desarrollo'],
+      dims: [
+        { label:'Aprendizaje',           dim:'s_apr',     min:5.0, weight:'crítico' },
+        { label:'Ownership',             dim:'s_own',     min:4.5, weight:'crítico' },
+        { label:'Comunicación',          dim:'s_com',     min:4.5, weight:'importante' },
+        { label:'Hard skills (avg)',     dim:'hardAvg',   min:4.0, weight:'importante' },
+        { label:'Criterio',              dim:'s_crit',    min:4.0, weight:'básico' },
+      ]
+    }
+  };
+
+  // Compute comparison rows for chosen rol
+  function getDimValue(dim) {
+    const dimMap = { hardAvg, softAvg, leadAvg, hardCore, dataAvg, elecAvg, secregAvg, mgmtAvg,
+      s_com:com, s_prob:prob, s_crit:crit, s_own:own, s_col:col, s_inf:inf, s_apr:apr, s_pro:pro,
+      l_pri:pri, l_dev:dev, l_coo:coo };
+    return dimMap[dim] ?? 0;
+  }
+
+  let comparativa = null;
+  let encaje = null;
+  if (rolBuscado && ROL_PERFILES[rolBuscado]) {
+    const rp = ROL_PERFILES[rolBuscado];
+    const rows = rp.dims.map(d => {
+      const val = getDimValue(d.dim);
+      const ok  = val >= d.min;
+      const gap = d.min - val;
+      return { ...d, val, ok, gap };
+    });
+    const critFail = rows.filter(r => r.weight === 'crítico' && !r.ok).length;
+    const impFail  = rows.filter(r => r.weight === 'importante' && !r.ok).length;
+    const perfilMatch = rp.match.includes(perfilId);
+
+    if (critFail === 0 && impFail <= 1 && perfilMatch) {
+      encaje = { nivel:'✓ Buen encaje', color:'#1A5A40', bg:'#DCF0E6',
+        texto:`El perfil del candidato (${perfil.emoji} ${perfil.label}) encaja bien con el rol buscado. Los requisitos críticos se cumplen.` };
+    } else if (critFail === 0 && !perfilMatch) {
+      encaje = { nivel:'~ Encaje parcial', color:'#B07020', bg:'#FBF3E3',
+        texto:`El candidato cumple los umbrales técnicos del rol, pero su perfil natural (${perfil.emoji} ${perfil.label}) no es el más típico para este puesto. Puede funcionar con adaptación.` };
+    } else if (critFail === 1) {
+      const gap = rows.find(r => r.weight === 'crítico' && !r.ok);
+      encaje = { nivel:'⚠ Encaje con reservas', color:'#B07020', bg:'#FBF3E3',
+        texto:`Falta reforzar un área crítica para este rol: ${gap.label} (tiene ${gap.val.toFixed(1)}, mínimo ${gap.min}). El resto del perfil es adecuado.` };
+    } else {
+      const gaps = rows.filter(r => r.weight === 'crítico' && !r.ok);
+      encaje = { nivel:'✗ Encaje limitado', color:'#C94040', bg:'#FBE8E8',
+        texto:`El candidato no cumple ${critFail} requisito(s) crítico(s) para este rol: ${gaps.map(g=>g.label).join(', ')}. Perfil del candidato: ${perfil.emoji} ${perfil.label}.` };
+    }
+    comparativa = { rows, encaje, rolBuscado };
+  }
+
+  // ── RIESGO ────────────────────────────────────────────────────────────────
+  let riesgo = 'Bajo';
+  let riesgoColor = 'var(--r9)';
+  let riesgoSub = 'Perfil consistente';
+  const critSkillsByLevel = {
+    junior: ['s_apr','s_own','s_com'],
+    mid:    ['s_com','s_crit','s_own','s_prob'],
+    senior: ['s_com','s_crit','s_own','s_prob','s_inf'],
+    lead:   ['s_com','s_crit','s_own','s_col','l_pri','l_dev'],
+  };
+  const critIds = critSkillsByLevel[nivelObj] || [];
+  const critFails2 = critIds.filter(id => getSkillScore(id,sc) > 0 && getSkillScore(id,sc) < (nivelObj==='junior'?3:nivelObj==='mid'?4:5)).length;
+  if (variance >= 2.5 || critFails2 >= 2) {
+    riesgo = 'Alto'; riesgoColor = 'var(--r1)';
+    riesgoSub = `${critFails2} skill(s) crítica(s) por debajo del umbral`;
+  } else if (variance >= 1.8 || critFails2 >= 1) {
+    riesgo = 'Medio'; riesgoColor = 'var(--r3)';
+    riesgoSub = 'Alguna skill crítica a reforzar';
+  }
+
+  // ── FORTALEZAS + GAPS ──────────────────────────────────────────────────────
+  const allSkills = [...BLOCKS, ...SOFT_BLOCKS, ...LEAD_BLOCKS]
+    .flatMap(b => b.skills.map(s => ({ id:s.id, name:s.name, score:sc[s.id]||0, block:b })));
+  const scored = allSkills.filter(s => s.score > 0);
+  const top3   = [...scored].sort((a,b) => b.score - a.score).slice(0,3);
+
+  // Gaps: if we have a rol, use its critical dims; otherwise use skill threshold
+  let gaps = [];
+  if (comparativa) {
+    gaps = comparativa.rows.filter(r => !r.ok)
+      .sort((a,b) => (b.gap - a.gap))
+      .slice(0,3)
+      .map(r => ({ name: r.label, score: r.val, min: r.min, weight: r.weight }));
+  } else {
+    const threshold = nivelObj==='junior'?3:nivelObj==='mid'?4:nivelObj==='senior'?5:6;
+    gaps = scored.filter(s => critIds.includes(s.id) && s.score < threshold)
+      .sort((a,b) => a.score - b.score).slice(0,3);
+  }
+
+  // ── RECOMENDACIÓN ─────────────────────────────────────────────────────────
+  let rec = '';
+  const nivelOK = objIdx > 0 ? nivelIdx >= objIdx : true;
+  if (nivel === 'Muy inicial') {
+    rec = 'El candidato no cumple los requisitos mínimos de nivel Junior. Falta base en skills críticas. No recomendado para incorporación inmediata.';
+  } else if (encaje) {
+    // Rol buscado selected — use encaje as primary signal
+    if (encaje.nivel.startsWith('✓')) {
+      rec = nivelOK
+        ? `Recomendado. ${encaje.texto} Nivel: ${nivel}.`
+        : `Perfil adecuado para el rol, pero nivel (${nivel}) por debajo del objetivo (${data.meta.nivelObj}). Valorar con plan de desarrollo.`;
+    } else if (encaje.nivel.startsWith('~')) {
+      rec = `${encaje.texto} Nivel: ${nivel}. Evaluar si la adaptación al rol compensa las diferencias de perfil.`;
+    } else if (encaje.nivel.startsWith('⚠')) {
+      rec = `${encaje.texto} ${nivelOK ? 'El nivel es adecuado.' : 'Además, el nivel (' + nivel + ') está por debajo del objetivo.'}`;
+    } else {
+      rec = `No recomendado para este rol. ${encaje.texto}`;
+    }
+  } else if (objIdx > 0 && nivelIdx < objIdx) {
+    rec = `Nivel ${nivel}, por debajo del objetivo ${data.meta.nivelObj}. Perfil: ${perfil.emoji} ${perfil.label}. ${gaps.length ? 'Gaps: ' + gaps.map(g=>g.name||g.label).join(', ') + '.' : ''} Apto con plan de desarrollo o para nivel inferior.`;
+  } else {
+    rec = `Nivel ${nivel}. Perfil: ${perfil.emoji} ${perfil.label}. ${riesgo === 'Bajo' ? 'Riesgo bajo.' : 'Revisar: ' + riesgoSub + '.'} ${top3.length ? 'Fortalezas: ' + top3.map(t=>t.name).join(', ') + '.' : ''}`;
+  }
+
+  return { nivel, nivelSub, perfil, perfilId, perfilSub, riesgo, riesgoColor, riesgoSub,
+           hardAvg, softAvg, leadAvg, top3, gaps, rec, comparativa, encaje };
+}
+
+function updateDiagnosis() {
+  const data = currentData();
+  if (!data) return;
+  const d = diagnose(data);
+
+  const NIVEL_COLORS = {'Lead':'#1A5A40','Senior':'#207050','Mid':'#2A7A7A','Junior':'#B07020','Muy inicial':'#C94040'};
+  const col = NIVEL_COLORS[d.nivel] || 'var(--text3)';
+  const $ = id => document.getElementById(id);
+
+  // Nivel
+  if ($('diag-nivel'))     { $('diag-nivel').textContent = d.nivel; $('diag-nivel').style.color = col; }
+  if ($('diag-nivel-sub')) $('diag-nivel-sub').textContent = d.nivelSub;
+
+  // Perfil badge
+  const badge = $('diag-perfil-badge');
+  if (badge) {
+    badge.innerHTML = `<div class="perfil-badge" style="color:${d.perfil.color};border-color:${d.perfil.color};background:${d.perfil.bg}">
+      <span class="perfil-emoji">${d.perfil.emoji}</span>${d.perfil.label}
+    </div>`;
+  }
+  if ($('diag-perfil-sub')) $('diag-perfil-sub').textContent = d.perfil.desc;
+
+  // Riesgo
+  if ($('diag-riesgo'))     { $('diag-riesgo').textContent = d.riesgo; $('diag-riesgo').style.color = d.riesgoColor; }
+  if ($('diag-riesgo-sub')) $('diag-riesgo-sub').textContent = d.riesgoSub;
+
+  // Avgs
+  if ($('diag-hard-avg')) $('diag-hard-avg').textContent = d.hardAvg > 0 ? d.hardAvg.toFixed(1) : '—';
+  if ($('diag-soft-avg')) $('diag-soft-avg').textContent = d.softAvg > 0 ? d.softAvg.toFixed(1) : '—';
+  if ($('diag-lead-avg')) $('diag-lead-avg').textContent = d.leadAvg > 0 ? d.leadAvg.toFixed(1) : '—';
+
+  // Sync rol selector with meta field
+  const rolMeta = data.meta.rolBuscado || '';
+  const diagSel = $('diag-rol-select');
+  if (diagSel && diagSel.value !== rolMeta) diagSel.value = rolMeta;
+
+  // Comparativa
+  renderComparativa(d);
+
+  // Fortalezas & Gaps
+  const BAR = ['#ddd','#C94040','#C96030','#B07020','#8A8010','#4A9020','#2A9050','#2A7A7A','#2A5FA0','#207050','#1A5A40'];
+  if ($('diag-fortalezas')) {
+    $('diag-fortalezas').innerHTML = d.top3.length
+      ? d.top3.map(t => `<div class="diag-list-item">
+          <span style="color:var(--text2)">${t.name}</span>
+          <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:${BAR[Math.round(t.score)]}">${t.score}/10</span>
+        </div>`).join('')
+      : '<div style="font-size:12px;color:var(--text3);padding:4px 0">Sin datos suficientes</div>';
+  }
+  if ($('diag-gaps')) {
+    $('diag-gaps').innerHTML = d.gaps.length
+      ? d.gaps.map(g => {
+          const score = g.score != null ? g.score : 0;
+          const label = g.name || g.label || '';
+          const minLabel = g.min != null ? ` (mín ${g.min})` : '';
+          const wBadge  = g.weight ? `<span style="font-size:9px;color:var(--text3);margin-left:4px">${g.weight}</span>` : '';
+          return `<div class="diag-list-item">
+            <span style="color:var(--text2)">${label}${wBadge}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:${BAR[Math.round(score)]}">${score > 0 ? score.toFixed(1) + minLabel : '—'}</span>
+          </div>`;
+        }).join('')
+      : '<div style="font-size:12px;color:var(--text3);padding:4px 0">Sin gaps críticos detectados</div>';
+  }
+
+  // Recomendación
+  if ($('diag-rec-text')) $('diag-rec-text').textContent = d.rec;
+}
+
+function renderComparativa(d) {
+  const body = document.getElementById('diag-comparativa-body');
+  if (!body) return;
+  const BAR = ['#ddd','#C94040','#C96030','#B07020','#8A8010','#4A9020','#2A9050','#2A7A7A','#2A5FA0','#207050','#1A5A40'];
+
+  if (!d.comparativa) {
+    body.innerHTML = '<p style="font-size:12px;color:var(--text3);text-align:center;padding:12px 0">Selecciona un rol para ver la comparativa</p>';
+    return;
+  }
+  const { rows, encaje } = d.comparativa;
+  const WEIGHT_COLOR = { 'crítico':'#C94040', 'importante':'#B07020', 'básico':'var(--text3)' };
+
+  const rowsHTML = rows.map(r => {
+    const pct  = Math.min(100, (r.val / 10) * 100).toFixed(1);
+    const minPct = (r.min / 10) * 100;
+    const barColor = r.ok ? BAR[Math.round(r.val)] : '#C94040';
+    const statusColor = r.ok ? '#1A5A40' : (r.weight === 'crítico' ? '#C94040' : '#B07020');
+    const statusBg    = r.ok ? '#DCF0E6' : (r.weight === 'crítico' ? '#FBE8E8' : '#FBF3E3');
+    const statusText  = r.ok ? '✓' : `−${r.gap.toFixed(1)}`;
+    return `<div class="comparativa-row">
+      <div class="comparativa-label">
+        ${r.label}
+        <span style="font-size:9px;color:${WEIGHT_COLOR[r.weight]};display:block">${r.weight}</span>
+      </div>
+      <div class="comparativa-bar-track">
+        <div class="comparativa-bar-fill" style="width:${pct}%;background:${barColor}"></div>
+        <div class="comparativa-bar-min" style="left:${minPct}%"></div>
+      </div>
+      <div class="comparativa-val" style="color:${barColor}">${r.val > 0 ? r.val.toFixed(1) : '—'}</div>
+      <div class="comparativa-status" style="color:${statusColor};background:${statusBg}">${statusText}</div>
+    </div>`;
+  }).join('');
+
+  body.innerHTML = `
+    ${rowsHTML}
+    <div class="encaje-card" style="background:${encaje.bg};border-color:${encaje.color}">
+      <div class="encaje-title" style="color:${encaje.color}">${encaje.nivel}</div>
+      <div class="encaje-text">${encaje.texto}</div>
+    </div>`;
+}
+
+function onRolChange() {
+  const sel = document.getElementById('diag-rol-select');
+  if (!sel) return;
+  const data = currentData();
+  if (!data) return;
+  data.meta.rolBuscado = sel.value;
+  // Also sync the meta form field
+  const metaSel = document.getElementById('f-rol-buscado');
+  if (metaSel) metaSel.value = sel.value;
+  upsert(data);
+  updateDiagnosis();
+}
+
+// ─── SUMMARY ─────────────────────────────────────────────────────────────────
+let radarChart = null;
+
+// circumference of r=62 circle
+const DIAL_C = 2 * Math.PI * 62; // ≈ 389.6
+
+function updateSummary() {
+  const data = currentData();
+  if (!data) return;
+  const ts = totalScore(data.scores);
+
+  // ── Candidate chip ──
+  const chip = document.getElementById('rs-chip');
+  if (chip) chip.textContent = data.meta.nombre || 'Sin nombre';
+
+  // ── Dial ──
+  const dialFill = document.getElementById('rs-dial-fill');
+  const dialNum  = document.getElementById('rs-dial-num');
+  if (dialFill && dialNum) {
+    if (ts === 0) {
+      dialFill.setAttribute('stroke-dasharray', `0 ${DIAL_C}`);
+      dialFill.style.stroke = '#ccc';
+      dialNum.textContent = '—';
+    } else {
+      const n = getNivel(ts);
+      const arc = (ts / 10) * DIAL_C;
+      dialFill.setAttribute('stroke-dasharray', `${arc.toFixed(1)} ${(DIAL_C - arc).toFixed(1)}`);
+      dialFill.style.stroke = n.color;
+      dialNum.textContent = ts.toFixed(2);
+      dialNum.style.fill = n.color;
+    }
+  }
+
+  // ── Nivel badge ──
+  const badge = document.getElementById('rs-nivel-badge');
+  if (badge) {
+    if (ts === 0) {
+      badge.textContent = ''; badge.style.background = 'none';
+    } else {
+      const n = getNivel(ts);
+      badge.textContent = n.label;
+      badge.style.background = n.bg;
+      badge.style.color = n.color;
+      badge.style.border = `1px solid ${n.color}30`;
+    }
+  }
+
+  // ── Progress to next level ──
+  const pw = document.getElementById('rs-progress-wrap');
+  if (pw) {
+    const NEXT_MAP = [
+      { from: 0,   to: 3.5, label: 'Muy inicial → Junior', next: 'Junior' },
+      { from: 3.5, to: 5.0, label: 'Junior → Mid',         next: 'Mid' },
+      { from: 5.0, to: 7.0, label: 'Mid → Senior',         next: 'Senior' },
+      { from: 7.0, to: 8.5, label: 'Senior → Lead',        next: 'Lead' },
+      { from: 8.5, to: 10,  label: 'Lead',                  next: null },
+    ];
+    const band = NEXT_MAP.find(b => ts < b.to) || NEXT_MAP[NEXT_MAP.length - 1];
+    const pct = band.next ? Math.min(100, ((ts - band.from) / (band.to - band.from)) * 100) : 100;
+    const n = getNivel(ts);
+    pw.innerHTML = `
+      <div class="rs-progress-label">
+        <span>${band.label}</span>
+        <span>${band.next ? (band.to - ts).toFixed(2) + ' para ' + band.next : 'Nivel máximo'}</span>
+      </div>
+      <div class="rs-progress-track">
+        <div class="rs-progress-fill" style="width:${pct.toFixed(1)}%;background:${n.color}"></div>
+      </div>`;
+  }
+
+  // ── Meta row ──
+  const mr = document.getElementById('rs-meta-row');
+  if (mr) {
+    const items = [
+      ['Contexto', data.meta.contexto],
+      ['Nivel objetivo', data.meta.nivelObj],
+      ['Evaluador', data.meta.evaluador],
+      ['Confianza', data.meta.confianza],
+    ].filter(([,v]) => v);
+    mr.innerHTML = items.map(([k,v]) =>
+      `<div class="rs-meta-item"><span class="rs-meta-key">${k}</span><span class="rs-meta-val">${v}</span></div>`
+    ).join('');
+  }
+
+  // ── Block breakdown bars ──
+  const barsEl = document.getElementById('rs-block-bars');
+  if (barsEl) {
+    barsEl.innerHTML = BLOCKS.map(b => {
+      const bs = blockScore(b, data.scores);
+      const skillsHtml = b.skills.map(s => {
+        const v = data.scores[s.id] || 0;
+        const pct = (v / 10 * 100).toFixed(1);
+        // Label from nearest anchor
+        const anchorKey = v <= 3 ? 2 : v <= 6 ? 5 : 8;
+        const anchorGuide = s.guide[anchorKey] || {};
+        const levelLabel = v > 0 ? (s.guide[v] ? s.guide[v].label : anchorGuide.label || '') : '—';
+        // 10-step color gradient red→green
+        const BAR_COLORS = ['#ddd','#C94040','#C96030','#B07020','#8A8010','#4A9020',
+                            '#2A9050','#2A7A7A','#2A5FA0','#207050','#1A5A40'];
+        const barColor = BAR_COLORS[v] || '#ddd';
+        const weightBadge = s.weight != null
+          ? `<span style="font-size:10px;color:var(--text3);margin-left:5px;font-family:'DM Mono',monospace">${s.weight}%</span>`
+          : '';
+        return `<div class="rs-skill-row">
+          <div class="rs-skill-name">${s.name}${weightBadge}</div>
+          <div class="rs-skill-track">
+            <div class="rs-skill-fill" style="width:${pct}%;background:${barColor}"></div>
+            <div class="rs-skill-ticks">${[...Array(9)].map(()=>'<div class="rs-skill-tick"></div>').join('')}<div class="rs-skill-tick"></div></div>
+          </div>
+          <div class="rs-skill-val" style="color:${v>0?barColor:'var(--text3)'}">${v > 0 ? v + (levelLabel ? ' · ' + levelLabel : '') : '—'}</div>
+        </div>`;
+      }).join('');
+
+      const scoreColor = bs === 0 ? 'var(--text3)' :
+        bs < 3.5 ? '#C94040' : bs < 5 ? '#B07020' : bs < 7 ? '#2A7A7A' : bs < 8.5 ? '#207050' : '#1A5A40';
+      const scoreBg = bs === 0 ? 'var(--surface2)' :
+        bs < 3.5 ? '#FBE8E8' : bs < 5 ? '#FBF3E3' : bs < 7 ? '#E2F3F3' : bs < 8.5 ? '#E4F3EC' : '#DCF0E6';
+
+      return `<div class="rs-block-section">
+        <div class="rs-block-header">
+          <div class="rs-block-name">
+            <span class="rs-block-dot" style="background:${b.hex}"></span>
+            <span style="color:${b.hex}">${b.label}</span>
+            <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">peso ${Math.round(b.weight*100)}%</span>
+          </div>
+          <div class="rs-block-score-pill" style="background:${scoreBg};color:${scoreColor};border-color:${scoreColor}30">
+            ${bs > 0 ? bs.toFixed(1) + ' / 10' : '—'}
+          </div>
+        </div>
+        ${skillsHtml}
+      </div>`;
+    }).join('');
+  }
+
+  updateRadar(data.scores);
+  updateDiagnosis();
+}
+
+function updateRadar(scoresObj) {
+  const vals = BLOCKS.map(b => {
+    const s = blockScore(b, scoresObj);
+    return s > 0 ? parseFloat(s.toFixed(2)) : 0;
+  });
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
+  const labels = BLOCKS.map(b => b.label);
+  const hexColors = BLOCKS.map(b => b.hex);
+
+  // Destroy and recreate if block structure has changed (different labels)
+  if (radarChart) {
+    const same = radarChart.data.labels.length === labels.length &&
+      radarChart.data.labels.every((l, i) => l === labels[i]);
+    if (!same) {
+      radarChart.destroy();
+      radarChart = null;
+    }
+  }
+
+  if (!radarChart) {
+    radarChart = new Chart(document.getElementById('radarCanvas'), {
+      type: 'radar',
+      data: {
+        labels,
+        datasets: [{
+          data: vals,
+          backgroundColor: 'rgba(44,74,62,0.10)',
+          borderColor: '#2C4A3E',
+          borderWidth: 2,
+          pointBackgroundColor: hexColors,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 1.5,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.raw.toFixed(1)} / 5` } }
+        },
+        scales: {
+          r: {
+            min: 0, max: 10,
+            ticks: { stepSize: 2, font: { size: 9 }, color: isDark ? '#666' : '#bbb', backdropColor: 'transparent' },
+            grid: { color: gridColor },
+            angleLines: { color: gridColor },
+            pointLabels: {
+              font: { size: 12, family: 'Epilogue', weight: '500' },
+              color: hexColors
+            }
+          }
+        }
+      }
+    });
+  } else {
+    radarChart.data.datasets[0].data = vals;
+    radarChart.data.datasets[0].pointBackgroundColor = hexColors;
+    radarChart.options.scales.r.pointLabels.color = hexColors;
+    radarChart.update('none');
+  }
+}
+
+// ─── LOAD CANDIDATE ──────────────────────────────────────────────────────────
+function loadCandidate(id) {
+  currentId = id;
+  const data = loadAll().find(c => c.id === id);
+  if (!data) return;
+
+  document.getElementById('f-nombre').value = data.meta.nombre || '';
+  document.getElementById('f-contexto').value = data.meta.contexto || '';
+  document.getElementById('f-nivel-obj').value = data.meta.nivelObj || '';
+  document.getElementById('f-evaluador').value = data.meta.evaluador || '';
+  document.getElementById('f-fecha').value = data.meta.fecha || '';
+  document.getElementById('f-confianza').value  = data.meta.confianza || '';
+  const rb = document.getElementById('f-rol-buscado'); if(rb) rb.value = data.meta.rolBuscado || '';
+  document.getElementById('q-fortalezas').value = data.notes.fortalezas || '';
+  document.getElementById('q-mejora').value = data.notes.mejora || '';
+  document.getElementById('q-obs').value = data.notes.obs || '';
+  document.getElementById('q-rec').value = data.notes.rec || '';
+
+  [...BLOCKS, ...SOFT_BLOCKS, ...LEAD_BLOCKS].forEach(b => {
+    b.skills.forEach(s => {
+      const v = data.scores[s.id] || 0;
+      renderStars(s.id, v);
+      const sn = document.getElementById('snum-' + s.id);
+      if (sn) sn.textContent = v > 0 ? v : '—';
+    });
+    updateBlockScore(b);
+  });
+
+  document.getElementById('topbar-title').textContent = data.meta.nombre || 'Evaluación';
+  updateSummary();
+  updateNavScores();
+  renderCandList();
+}
+
+// ─── CANDIDATE MANAGEMENT ────────────────────────────────────────────────────
+function renderCandList() {
+  const list = loadAll();
+  const container = document.getElementById('cand-list');
+  if (!list.length) { container.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:4px 8px">Sin candidatos</div>'; return; }
+  container.innerHTML = list.map(c => `
+    <div class="cand-item ${c.id === currentId ? 'active' : ''}" onclick="loadCandidate('${c.id}')">
+      <span>${c.meta.nombre || 'Sin nombre'}</span>
+      <span class="cand-del" onclick="event.stopPropagation();confirmDelete('${c.id}')" title="Eliminar">×</span>
+    </div>
+  `).join('');
+}
+
+function newCandidate() {
+  const d = blankState();
+  upsert(d);
+  currentId = d.id;
+  loadCandidate(d.id);
+  renderCandList();
+  showToast('Nuevo candidato creado');
+}
+
+function saveCandidate() {
+  const data = currentData() || blankState();
+  upsert(data);
+  renderCandList();
+  showToast('Guardado');
+}
+
+function autoSaveMeta() {
+  const data = currentData();
+  if (!data) return;
+  data.meta.nombre = document.getElementById('f-nombre').value;
+  data.meta.contexto = document.getElementById('f-contexto').value;
+  data.meta.nivelObj = document.getElementById('f-nivel-obj').value;
+  data.meta.evaluador = document.getElementById('f-evaluador').value;
+  data.meta.fecha = document.getElementById('f-fecha').value;
+  data.meta.confianza = document.getElementById('f-confianza').value;
+  data.notes.fortalezas = document.getElementById('q-fortalezas').value;
+  data.notes.mejora = document.getElementById('q-mejora').value;
+  data.notes.obs = document.getElementById('q-obs').value;
+  data.notes.rec = document.getElementById('q-rec').value;
+  upsert(data);
+  document.getElementById('topbar-title').textContent = data.meta.nombre || 'Evaluación';
+  renderCandList();
+}
+
+function confirmDelete(id) {
+  const list = loadAll();
+  const c = list.find(x => x.id === id);
+  openModal(
+    'Eliminar candidato',
+    `¿Eliminar a "${c?.meta?.nombre || 'este candidato'}"? Esta acción no se puede deshacer.`,
+    () => {
+      const updated = list.filter(x => x.id !== id);
+      saveAll(updated);
+      if (currentId === id) {
+        if (updated.length) loadCandidate(updated[updated.length-1].id);
+        else newCandidate();
+      }
+      renderCandList();
+      showToast('Candidato eliminado');
+    }
+  );
+}
+
+// ─── EXCEL LOADER ─────────────────────────────────────────────────────────────
+function loadExcel(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const wb = XLSX.read(ev.target.result, { type: 'array' });
+      const newBlocks = [];
+
+      // 1. Read block definitions from ⚙ Config sheet
+      // Expected columns: A=id, B=label, C=weight(%), D=hex
+      const cfgName = wb.SheetNames.find(n => n.includes('Config'));
+      if (!cfgName) { showToast('Error: falta la hoja ⚙ Config'); return; }
+      const cfgRows = XLSX.utils.sheet_to_json(wb.Sheets[cfgName], { header:1, defval:'' });
+
+      // Find data rows: skip until we hit a row where col A has content and col C is numeric
+      const blockDefs = [];
+      for (const row of cfgRows) {
+        const id = String(row[0]||'').trim();
+        const label = String(row[1]||'').trim();
+        const w = parseFloat(row[2]);
+        const hex = String(row[3]||'').trim().replace('#','');
+        if (id && label && !isNaN(w) && w > 0) {
+          blockDefs.push({ id, label, weight: w/100, hex: hex||'888888' });
+        }
+      }
+
+      if (!blockDefs.length) { showToast('Error: no se encontraron bloques en ⚙ Config'); return; }
+
+      // 2. For each block def, find matching sheet and parse skills
+      const BLOCK_COLORS = {
+        data:   { color:'var(--data-color)',   bg:'var(--data-bg)'   },
+        elec:   { color:'var(--elec-color)',   bg:'var(--elec-bg)'   },
+        norm:   { color:'var(--norm-color)',   bg:'var(--norm-bg)'   },
+        sector: { color:'var(--sector-color)', bg:'var(--sector-bg)' },
+        mgmt:   { color:'var(--mgmt-color)',   bg:'var(--mgmt-bg)'   },
+      };
+      const DEFAULT_COLORS = { color:'var(--text2)', bg:'var(--surface2)' };
+
+      for (const def of blockDefs) {
+        // Match sheet by block label or id (case-insensitive, partial match)
+        const sheetName = wb.SheetNames.find(n =>
+          n.toLowerCase().includes(def.label.toLowerCase()) ||
+          n.toLowerCase().includes(def.id.toLowerCase())
+        );
+        if (!sheetName) {
+          console.warn(`No sheet found for block "${def.label}"`);
+          continue;
+        }
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header:1, defval:'' });
+
+        const skills = [];
+        // Skill rows start at index 3 (rows 0=title, 1=level headers, 2=col headers, 3+=data)
+        for (let ri = 3; ri < rows.length; ri++) {
+          const row = rows[ri];
+          const sid   = String(row[0]||'').trim();
+          const sname = String(row[1]||'').trim();
+          if (!sid || !sname) continue; // skip empty rows
+
+          const sdesc   = String(row[2]||'').trim();
+          const sweight = parseFloat(row[3]);
+          const guide = {};
+
+          // Detect format by column count:
+          // Format 5-level: cols 5-24 → 4 cols/level × 5 levels (label,q1,q2,tip)
+          // Format 3-anchor: cols 5-28 → 8 cols/anchor × 3 anchors (label,qk,qc,ak_ok,ak_bad,ac_ok,ac_bad,hint)
+          // We detect by checking if col 13 has content (5-level) vs col 21+ (3-anchor)
+          const maxCol = row.length;
+          const is5Level = maxCol <= 25;
+
+          if (is5Level) {
+            // 5-level format: label, q1, q2, tip per level
+            for (let lv = 1; lv <= 5; lv++) {
+              const base = 4 + (lv-1)*4;
+              const qs = [String(row[base+1]||'').trim(), String(row[base+2]||'').trim()].filter(q=>q);
+              guide[lv] = {
+                label: String(row[base]||'').trim() || `Nivel ${lv}`,
+                q: qs,
+                tip: String(row[base+3]||'').trim(),
+              };
+            }
+          } else {
+            // 3-anchor format: label,qk,qc,ak_ok,ak_bad,ac_ok,ac_bad,hint per anchor
+            const ANCHORS = [2, 5, 8];
+            ANCHORS.forEach((anchorVal, idx) => {
+              const base = 4 + idx * 8;
+              guide[anchorVal] = {
+                label:  String(row[base]   ||'').trim() || `Ancla ${anchorVal}`,
+                qk:     String(row[base+1] ||'').trim(),
+                qc:     String(row[base+2] ||'').trim(),
+                ak_ok:  String(row[base+3] ||'').trim(),
+                ak_bad: String(row[base+4] ||'').trim(),
+                ac_ok:  String(row[base+5] ||'').trim(),
+                ac_bad: String(row[base+6] ||'').trim(),
+                hint:   String(row[base+7] ||'').trim(),
+              };
+            });
+          }
+          const skill = { id: sid, name: sname, desc: sdesc, guide };
+          if (!isNaN(sweight) && sweight > 0) skill.weight = sweight;
+          skills.push(skill);
+        }
+
+        if (!skills.length) { console.warn(`No skills found in sheet "${sheetName}"`); continue; }
+
+        const colors = BLOCK_COLORS[def.id] || DEFAULT_COLORS;
+        newBlocks.push({
+          id:     def.id,
+          label:  def.label,
+          weight: def.weight,
+          hex:    '#' + def.hex,
+          color:  colors.color,
+          bg:     colors.bg,
+          skills,
+        });
+      }
+
+      if (!newBlocks.length) { showToast('Error: no se pudo leer ningún bloque del Excel'); return; }
+
+      // 3. Replace global BLOCKS and rebuild everything
+      BLOCKS = newBlocks;
+
+      // Destroy radar so it rebuilds with new block structure
+      if (radarChart) { radarChart.destroy(); radarChart = null; }
+
+      // Migrate existing candidate scores to include any new skill ids
+      loadAll().forEach(cand => { migrateScores(cand); });
+      const list = loadAll().map(c => { migrateScores(c); return c; });
+      saveAll(list);
+
+      renderBlocks();
+      renderGuia();
+      // Re-add sidebar nav items for blocks
+      renderBlockNav();
+
+      const data = currentData();
+      if (data) loadCandidate(data.id);
+      else if (list.length) loadCandidate(list[list.length-1].id);
+
+      showToast(`Excel cargado — ${newBlocks.length} bloques, ${newBlocks.reduce((a,b)=>a+b.skills.length,0)} skills`);
+    } catch(err) {
+      showToast('Error al leer el Excel: ' + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value = '';
+}
+
+function renderBlockNav() {
+  const nav = document.getElementById('block-nav-list');
+  if (!nav) return;
+  nav.innerHTML = BLOCKS.map(b => `
+    <button class="nav-item" onclick="scrollToBlock('${b.id}')">
+      <span class="nav-dot" style="background:${b.hex}"></span>
+      ${b.label}
+      <span class="nav-score" id="nav-${b.id}">—</span>
+    </button>`).join('');
+}
+
+// ─── EXPORT / IMPORT ─────────────────────────────────────────────────────────
+function exportJSON() {
+  const list = loadAll();
+  const blob = new Blob([JSON.stringify(list, null, 2)], { type: 'application/json' });
+  triggerDownload(blob, 'matriz_consulting_backup.json');
+  showToast('JSON exportado');
+}
+
+function importJSON() {
+  document.getElementById('file-import').click();
+}
+
+function handleImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      const list = Array.isArray(data) ? data : [data];
+      openModal(
+        'Importar JSON',
+        `Se importarán ${list.length} candidato(s). Los candidatos existentes se mantendrán.`,
+        () => {
+          const existing = loadAll();
+          list.forEach(d => {
+            if (!existing.find(x => x.id === d.id)) existing.push(d);
+          });
+          saveAll(existing);
+          loadCandidate(list[list.length-1].id);
+          renderCandList();
+          showToast(`${list.length} candidato(s) importado(s)`);
+        }
+      );
+    } catch { showToast('Error: JSON inválido'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function exportTXT() {
+  const data = currentData();
+  if (!data) return;
+  const ts = totalScore(data.scores);
+  const nivel = ts > 0 ? getNivel(ts).label : '—';
+  let txt = `EVALUACIÓN DE SKILLS · CONSULTING\n${'─'.repeat(44)}\n`;
+  txt += `Candidato:  ${data.meta.nombre || '—'}\n`;
+  if (data.meta.contexto)  txt += `Contexto:   ${data.meta.contexto}\n`;
+  if (data.meta.nivelObj)  txt += `Nivel obj:  ${data.meta.nivelObj}\n`;
+  if (data.meta.evaluador) txt += `Evaluador:  ${data.meta.evaluador}\n`;
+  if (data.meta.fecha)     txt += `Fecha:      ${data.meta.fecha}\n`;
+  if (data.meta.confianza) txt += `Confianza:  ${data.meta.confianza}\n`;
+  txt += `\nSCORE TOTAL: ${ts > 0 ? ts.toFixed(2) : '—'} → ${nivel}\n\n`;
+  [...BLOCKS, ...SOFT_BLOCKS, ...LEAD_BLOCKS].forEach(b => {
+    const bs = blockScore(b, data.scores);
+    txt += `${b.label.toUpperCase()} (peso ${Math.round(b.weight*100)}%)  ·  Score: ${bs > 0 ? bs.toFixed(1) : '—'}\n`;
+    b.skills.forEach(s => {
+      const v = data.scores[s.id] || 0;
+      const g = v > 0 ? s.guide[v] : null;
+      txt += `  ${s.name}: ${v > 0 ? v + '/5 – ' + g.label : '—'}\n`;
+    });
+    txt += '\n';
+  });
+  if (data.notes.fortalezas) txt += `Fortalezas:\n${data.notes.fortalezas}\n\n`;
+  if (data.notes.mejora)     txt += `Áreas de mejora:\n${data.notes.mejora}\n\n`;
+  if (data.notes.obs)        txt += `Observaciones:\n${data.notes.obs}\n\n`;
+  if (data.notes.rec)        txt += `Recomendación: ${data.notes.rec}\n`;
+  const blob = new Blob([txt], { type: 'text/plain' });
+  const nombre = (data.meta.nombre || 'candidato').replace(/\s+/g,'_').toLowerCase();
+  triggerDownload(blob, `evaluacion_${nombre}.txt`);
+  showToast('Texto exportado');
+}
+
+function triggerDownload(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ─── GUÍA DE NIVELES ─────────────────────────────────────────────────────────
+function renderGuia() {
+  const c = document.getElementById('guia-detail');
+  const ANCHOR_META = {
+    2: { range:'1–3', zone:'Básico',           desc:'Definición y reconocimiento' },
+    5: { range:'4–6', zone:'Sólido',            desc:'Aplicación y criterio' },
+    8: { range:'7–10', zone:'Avanzado / Experto', desc:'Diseño, trade-offs y visión' },
+  };
+  c.innerHTML = BLOCKS.map(b => `
+    <div class="summary-card" style="border-top:3px solid ${b.hex}">
+      <div class="summary-title" style="color:${b.color}">${b.label}</div>
+      ${b.skills.map(s => {
+        const rid = `guia-${s.id}`;
+        return `<div style="margin-bottom:28px">
+          <div style="font-weight:500;font-size:14px;margin-bottom:3px">${s.name}</div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:14px">${s.desc}</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+            ${[2,5,8].map(av => {
+              const g = s.guide[av] || {};
+              const am = ANCHOR_META[av];
+              const col = levelColor(av);
+              const id = `${rid}-a${av}`;
+              const esc = str => (str||'').replace(/`/g,"'").replace(/\${/g,'&#36;{');
+              return `<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
+                <div style="background:var(--surface2);padding:10px 12px;border-bottom:1px solid var(--border)">
+                  <div style="display:flex;align-items:baseline;gap:8px">
+                    <span style="font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:${col}">${av}</span>
+                    <span style="font-size:9px;color:var(--text3);font-family:'DM Mono',monospace">${am.range}</span>
+                  </div>
+                  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:${col};margin-top:2px">${esc(g.label)||am.zone}</div>
+                  <div style="font-size:10px;color:var(--text3);font-style:italic">${am.desc}</div>
+                </div>
+                <div style="padding:10px 12px">
+                  ${g.qk ? `<div style="margin-bottom:10px">
+                    <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:4px">Conocimiento</div>
+                    <div style="font-size:12px;font-weight:500;color:var(--text);line-height:1.45;margin-bottom:6px">${esc(g.qk)}</div>
+                    <button class="guide-ans-toggle ok" onclick="toggleAns('${id}-k-ok',this)">✓ Correcta</button>
+                    <button class="guide-ans-toggle bad" onclick="toggleAns('${id}-k-bad',this)">✗ Error típico</button>
+                    <div class="guide-ans-box ok" id="${id}-k-ok">${esc(g.ak_ok)}</div>
+                    <div class="guide-ans-box bad" id="${id}-k-bad">${esc(g.ak_bad)}</div>
+                  </div>` : ''}
+                  ${g.qc ? `<div style="margin-bottom:8px">
+                    <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:4px">Caso práctico</div>
+                    <div style="font-size:12px;font-weight:500;color:var(--text);line-height:1.45;margin-bottom:6px">${esc(g.qc)}</div>
+                    <button class="guide-ans-toggle ok" onclick="toggleAns('${id}-c-ok',this)">✓ Correcta</button>
+                    <button class="guide-ans-toggle bad" onclick="toggleAns('${id}-c-bad',this)">✗ Error típico</button>
+                    <div class="guide-ans-box ok" id="${id}-c-ok">${esc(g.ac_ok)}</div>
+                    <div class="guide-ans-box bad" id="${id}-c-bad">${esc(g.ac_bad)}</div>
+                  </div>` : ''}
+                  ${g.hint ? `<div style="font-size:10px;color:var(--text3);padding-top:8px;border-top:1px dashed var(--border);font-style:italic;line-height:1.4">${esc(g.hint)}</div>` : ''}
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:6px;font-style:italic">
+            Puntuación: responde bien conocimiento + caso en ancla 2 → zona 3-4. Ancla 5 → zona 5-6. Ancla 8 → zona 8-9. Supera ancla 8 con matiz propio → 10.
+          </div>
+        </div>`;
+      }).join('<hr style="border:none;border-top:1px solid var(--border);margin:20px 0">')}
+    </div>
+  `).join('');
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  // legacy alias
+  if (name === 'evaluacion') name = 'hard';
+  document.querySelectorAll('.view-section').forEach(el => el.classList.remove('visible'));
+  document.querySelectorAll('.view-tab, .nav-item').forEach(el => el.classList.remove('active'));
+  const tabEl = document.getElementById('tab-' + name);
+  if (tabEl) tabEl.classList.add('visible');
+  if (btn) btn.classList.add('active');
+  if (name === 'resumen') updateSummary();
+}
+
+function scrollToBlock(id) {
+  const el = document.getElementById('block-' + id);
+  if (!el) return;
+  // determine which tab the block lives in
+  const isSoft = SOFT_BLOCKS.some(b => b.id === id || b.skills.some(s => s.id === id));
+  const isLead = LEAD_BLOCKS.some(b => b.id === id || b.skills.some(s => s.id === id));
+  const tabName = isSoft || isLead ? 'soft' : 'hard';
+  switchTab(tabName, null);
+  setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+}
+
+// ─── MODAL ───────────────────────────────────────────────────────────────────
+let modalAction = null;
+function openModal(title, body, onConfirm) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').textContent = body;
+  modalAction = onConfirm;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  modalAction = null;
+}
+document.getElementById('modal-confirm').onclick = () => {
+  if (modalAction) modalAction();
+  closeModal();
+};
+document.getElementById('modal-overlay').onclick = (e) => {
+  if (e.target === e.currentTarget) closeModal();
+};
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ─── START ───────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
