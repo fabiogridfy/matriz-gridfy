@@ -602,6 +602,40 @@
     letter-spacing:0.1em; margin-bottom:6px; }
   .encaje-text { font-size:13px; line-height:1.6; }
 
+
+  /* Soft skill cards */
+  .soft-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 4px;
+  }
+  @media (max-width: 900px) { .soft-cards-grid { grid-template-columns: repeat(2,1fr); } }
+  .soft-skill-card {
+    border-radius: 12px; padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    transition: border-color 0.15s;
+    position: relative;
+  }
+  .soft-skill-card.scored { border-color: var(--card-accent); }
+  .soft-card-emoji { font-size: 20px; margin-bottom: 6px; line-height: 1; }
+  .soft-card-name { font-size: 11px; font-weight: 600; color: var(--text2);
+    margin-bottom: 6px; line-height: 1.3; }
+  .soft-card-bar-track { height: 5px; background: var(--surface2); border-radius: 3px;
+    overflow: hidden; margin-bottom: 6px; }
+  .soft-card-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+  .soft-card-score { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 600;
+    line-height: 1; }
+  .soft-card-label { font-size: 9px; color: var(--text3); margin-top: 3px;
+    text-transform: uppercase; letter-spacing: 0.06em; line-height: 1.2; }
+  .lead-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 4px;
+  }
+
 </style>
 </head>
 <body>
@@ -820,6 +854,19 @@
           <canvas id="radarCanvas" role="img" aria-label="Radar de scores por bloque" style="max-width:100%;max-height:260px">Scores por bloque.</canvas>
         </div>
 
+      </div>
+
+
+      <!-- Soft skills card grid -->
+      <div class="summary-card" style="margin-bottom:0">
+        <div class="rs-card-label" style="margin-bottom:12px">Soft Skills</div>
+        <div class="soft-cards-grid" id="soft-cards-grid"></div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+          <div class="rs-card-label" style="margin-bottom:10px;opacity:0.7">Leadership
+            <span style="font-size:9px;font-weight:400;color:var(--text3)"> · opcional</span>
+          </div>
+          <div class="lead-cards-grid" id="lead-cards-grid"></div>
+        </div>
       </div>
 
       <!-- Row 2: block breakdown bars -->
@@ -1827,6 +1874,50 @@ function init() {
 }
 
 
+
+// ─── SOFT SKILL CARDS ────────────────────────────────────────────────────────
+function renderSoftCards(scoresObj) {
+  const SKILL_EMOJIS = {
+    s_com:'💬', s_prob:'🔍', s_crit:'⚖️', s_pro:'🚀',
+    s_own:'🎯', s_col:'🤝', s_apr:'📈', s_inf:'✨',
+    l_pri:'🗂️', l_dev:'🌱', l_coo:'🔗', l_vis:'🔭'
+  };
+  const BAR = ['#ddd','#C94040','#C96030','#B07020','#8A8010','#4A9020',
+               '#2A9050','#2A7A7A','#2A5FA0','#207050','#1A5A40'];
+  // Level labels for soft (anchor-based: 2=básico, 5=sólido, 8=experto)
+  const LEVEL_LABELS = [
+    '', 'Muy bajo', 'Básico', 'Inicial', 'Inicial+',
+    'Sólido', 'Sólido+', 'Avanzado', 'Avanzado+', 'Excelente', 'Excelente+'
+  ];
+
+  function buildCards(blocks, containerId) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    const allSkills = blocks.flatMap(b => b.skills);
+    if (!allSkills.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 0">Sin skills de este tipo</div>'; return; }
+    el.innerHTML = allSkills.map(s => {
+      const v = scoresObj[s.id] || 0;
+      const pct = (v / 10 * 100).toFixed(1);
+      const color = BAR[v] || '#ddd';
+      const emoji = SKILL_EMOJIS[s.id] || '●';
+      const label = v > 0 ? LEVEL_LABELS[v] : 'Sin evaluar';
+      const scored = v > 0;
+      return `<div class="soft-skill-card${scored?' scored':''}" style="--card-accent:${color}">
+        <div class="soft-card-emoji">${emoji}</div>
+        <div class="soft-card-name">${s.name}</div>
+        <div class="soft-card-bar-track">
+          <div class="soft-card-bar-fill" style="width:${pct}%;background:${color}"></div>
+        </div>
+        <div class="soft-card-score" style="color:${scored?color:'var(--text3)'}">${scored?v:'—'}</div>
+        <div class="soft-card-label" style="color:${scored?color:'var(--text3)'}">${label}</div>
+      </div>`;
+    }).join('');
+  }
+
+  buildCards(SOFT_BLOCKS, 'soft-cards-grid');
+  buildCards(LEAD_BLOCKS, 'lead-cards-grid');
+}
+
 // ─── SOFT / LEAD BLOCKS ──────────────────────────────────────────────────────
 function renderSoftBlocks() {
   const sc = document.getElementById('soft-blocks-container');
@@ -2317,66 +2408,71 @@ function diagnose(data) {
   const perfil    = PERFILES[perfilId];
   const perfilSub = perfil.desc;
 
-  // ── ROL BUSCADO: IDEAL PROFILES ──────────────────────────────────────────
-  // Each rol defines minimum thresholds for key dimensions: { label, min, skillId/dim }
-  // dim can be: 'hardAvg','softAvg','leadAvg','hardCore','dataAvg','elecAvg','secregAvg','mgmtAvg',
-  //             or a skill id like 's_com'
+  // ── ROL BUSCADO: IDEAL PROFILES WITH LEVEL-AWARE THRESHOLDS ─────────────
+  // min is an object {junior, mid, senior, lead} — resolved by nivelKey
+  const nivelKey = ['junior','mid','senior','lead'].includes(nivelObj) ? nivelObj
+                 : nivelIdx <= 1 ? 'junior' : nivelIdx === 2 ? 'mid' : 'senior';
+
   const ROL_PERFILES = {
     'Analista / Técnico especialista': {
       match: ['tecnico_puro','analista'],
       dims: [
-        { label:'Hard skills (avg)',     dim:'hardAvg',   min:6.5, weight:'crítico' },
-        { label:'Data / Analítico',      dim:'dataAvg',   min:7.0, weight:'crítico' },
-        { label:'Electricidad',          dim:'elecAvg',   min:6.0, weight:'importante' },
-        { label:'Normativa',             dim:'secregAvg',   min:5.5, weight:'importante' },
-        { label:'Comunicación',          dim:'s_com',     min:5.0, weight:'básico' },
-        { label:'Estructuración',        dim:'s_prob',    min:5.0, weight:'básico' },
+        { label:'Hard skills (avg)',  dim:'hardAvg',   min:{ junior:4.0, mid:6.5, senior:7.5, lead:8.0 }, weight:'crítico' },
+        { label:'Data / Analítico',   dim:'dataAvg',   min:{ junior:4.5, mid:7.0, senior:8.0, lead:8.5 }, weight:'crítico' },
+        { label:'Electricidad',       dim:'elecAvg',   min:{ junior:3.5, mid:6.0, senior:7.0, lead:7.5 }, weight:'importante' },
+        { label:'Sector & Reg.',      dim:'secregAvg', min:{ junior:3.0, mid:5.5, senior:6.5, lead:7.0 }, weight:'importante' },
+        { label:'Comunicación',       dim:'s_com',     min:{ junior:4.0, mid:5.0, senior:6.5, lead:7.5 }, weight:'básico' },
+        { label:'Estructuración',     dim:'s_prob',    min:{ junior:3.5, mid:5.0, senior:6.0, lead:7.0 }, weight:'básico' },
       ]
     },
     'Consultor técnico-negocio': {
       match: ['equilibrado','tecnico_puro'],
       dims: [
-        { label:'Hard skills (avg)',     dim:'hardAvg',   min:6.0, weight:'crítico' },
-        { label:'Sector / negocio',      dim:'secregAvg', min:6.0, weight:'crítico' },
-        { label:'Comunicación',          dim:'s_com',     min:6.5, weight:'crítico' },
-        { label:'Criterio',              dim:'s_crit',    min:6.0, weight:'importante' },
-        { label:'Entend. del problema',  dim:'s_prob',    min:6.0, weight:'importante' },
-        { label:'Soft skills (avg)',     dim:'softAvg',   min:6.0, weight:'importante' },
+        { label:'Hard skills (avg)',    dim:'hardAvg',   min:{ junior:4.0, mid:6.0, senior:7.0, lead:7.5 }, weight:'crítico' },
+        { label:'Sector & Reg.',        dim:'secregAvg', min:{ junior:3.5, mid:6.0, senior:7.0, lead:7.5 }, weight:'crítico' },
+        { label:'Comunicación',         dim:'s_com',     min:{ junior:4.0, mid:6.0, senior:7.0, lead:8.0 }, weight:'crítico' },
+        { label:'Criterio',             dim:'s_crit',    min:{ junior:3.5, mid:5.5, senior:6.5, lead:7.5 }, weight:'importante' },
+        { label:'Entend. del problema', dim:'s_prob',    min:{ junior:3.5, mid:5.5, senior:6.5, lead:7.5 }, weight:'importante' },
+        { label:'Soft skills (avg)',    dim:'softAvg',   min:{ junior:3.5, mid:5.5, senior:6.5, lead:7.5 }, weight:'importante' },
       ]
     },
     'Consultor orientado a cliente': {
       match: ['cliente','equilibrado'],
       dims: [
-        { label:'Comunicación',          dim:'s_com',     min:7.0, weight:'crítico' },
-        { label:'Entend. del problema',  dim:'s_prob',    min:7.0, weight:'crítico' },
-        { label:'Criterio',              dim:'s_crit',    min:6.5, weight:'crítico' },
-        { label:'Influencia',            dim:'s_inf',     min:6.5, weight:'importante' },
-        { label:'Hard skills (avg)',     dim:'hardAvg',   min:5.5, weight:'básico' },
-        { label:'Sector / negocio',      dim:'secregAvg', min:5.5, weight:'básico' },
+        { label:'Comunicación',         dim:'s_com',     min:{ junior:4.5, mid:6.5, senior:7.5, lead:8.5 }, weight:'crítico' },
+        { label:'Entend. del problema', dim:'s_prob',    min:{ junior:4.0, mid:6.5, senior:7.5, lead:8.0 }, weight:'crítico' },
+        { label:'Criterio',             dim:'s_crit',    min:{ junior:4.0, mid:6.0, senior:7.0, lead:8.0 }, weight:'crítico' },
+        { label:'Influencia',           dim:'s_inf',     min:{ junior:3.5, mid:5.5, senior:6.5, lead:7.5 }, weight:'importante' },
+        { label:'Hard skills (avg)',    dim:'hardAvg',   min:{ junior:3.5, mid:5.5, senior:6.5, lead:7.0 }, weight:'básico' },
+        { label:'Sector & Reg.',        dim:'secregAvg', min:{ junior:3.0, mid:5.0, senior:6.0, lead:7.0 }, weight:'básico' },
       ]
     },
     'Project / Delivery Lead': {
       match: ['liderazgo'],
       dims: [
-        { label:'Leadership (avg)',      dim:'leadAvg',   min:7.5, weight:'crítico' },
-        { label:'Ownership',             dim:'s_own',     min:8.0, weight:'crítico' },
-        { label:'Comunicación',          dim:'s_com',     min:7.5, weight:'crítico' },
-        { label:'Criterio',              dim:'s_crit',    min:7.0, weight:'importante' },
-        { label:'Coordinación',          dim:'l_coo',     min:7.0, weight:'importante' },
-        { label:'Hard skills (avg)',     dim:'hardAvg',   min:6.0, weight:'básico' },
+        { label:'Leadership (avg)',     dim:'leadAvg',   min:{ junior:4.0, mid:6.0, senior:7.5, lead:8.5 }, weight:'crítico' },
+        { label:'Ownership',            dim:'s_own',     min:{ junior:5.0, mid:6.5, senior:8.0, lead:9.0 }, weight:'crítico' },
+        { label:'Comunicación',         dim:'s_com',     min:{ junior:4.5, mid:6.5, senior:7.5, lead:8.5 }, weight:'crítico' },
+        { label:'Criterio',             dim:'s_crit',    min:{ junior:4.0, mid:6.0, senior:7.0, lead:8.0 }, weight:'importante' },
+        { label:'Coordinación',         dim:'l_coo',     min:{ junior:3.5, mid:5.5, senior:7.0, lead:8.0 }, weight:'importante' },
+        { label:'Hard skills (avg)',    dim:'hardAvg',   min:{ junior:3.5, mid:5.5, senior:6.5, lead:7.0 }, weight:'básico' },
       ]
     },
     'Perfil en formación': {
       match: ['desarrollo'],
       dims: [
-        { label:'Aprendizaje',           dim:'s_apr',     min:5.0, weight:'crítico' },
-        { label:'Ownership',             dim:'s_own',     min:4.5, weight:'crítico' },
-        { label:'Comunicación',          dim:'s_com',     min:4.5, weight:'importante' },
-        { label:'Hard skills (avg)',     dim:'hardAvg',   min:4.0, weight:'importante' },
-        { label:'Criterio',              dim:'s_crit',    min:4.0, weight:'básico' },
+        { label:'Aprendizaje',          dim:'s_apr',     min:{ junior:5.0, mid:6.0, senior:7.0, lead:8.0 }, weight:'crítico' },
+        { label:'Ownership',            dim:'s_own',     min:{ junior:4.5, mid:5.5, senior:6.5, lead:7.5 }, weight:'crítico' },
+        { label:'Comunicación',         dim:'s_com',     min:{ junior:4.0, mid:5.5, senior:6.5, lead:7.5 }, weight:'importante' },
+        { label:'Hard skills (avg)',    dim:'hardAvg',   min:{ junior:3.5, mid:5.0, senior:6.0, lead:7.0 }, weight:'importante' },
+        { label:'Criterio',             dim:'s_crit',    min:{ junior:3.5, mid:5.0, senior:6.0, lead:7.0 }, weight:'básico' },
       ]
     }
   };
+
+  function resolveMin(d) {
+    return typeof d.min === 'object' ? (d.min[nivelKey] ?? d.min.mid ?? 5) : d.min;
+  }
 
   // Compute comparison rows for chosen rol
   function getDimValue(dim) {
@@ -2392,30 +2488,32 @@ function diagnose(data) {
     const rp = ROL_PERFILES[rolBuscado];
     const rows = rp.dims.map(d => {
       const val = getDimValue(d.dim);
-      const ok  = val >= d.min;
-      const gap = d.min - val;
-      return { ...d, val, ok, gap };
+      const min = resolveMin(d);
+      const ok  = val >= min;
+      const gap = min - val;
+      return { ...d, val, ok, gap, min };
     });
     const critFail = rows.filter(r => r.weight === 'crítico' && !r.ok).length;
     const impFail  = rows.filter(r => r.weight === 'importante' && !r.ok).length;
     const perfilMatch = rp.match.includes(perfilId);
+    const levelLabel = nivelKey.charAt(0).toUpperCase() + nivelKey.slice(1);
 
     if (critFail === 0 && impFail <= 1 && perfilMatch) {
       encaje = { nivel:'✓ Buen encaje', color:'#1A5A40', bg:'#DCF0E6',
-        texto:`El perfil del candidato (${perfil.emoji} ${perfil.label}) encaja bien con el rol buscado. Los requisitos críticos se cumplen.` };
+        texto:`Encaje sólido para ${levelLabel} en el rol de ${rolBuscado}. Perfil: ${perfil.emoji} ${perfil.label}. Los requisitos críticos se cumplen para este nivel.` };
     } else if (critFail === 0 && !perfilMatch) {
       encaje = { nivel:'~ Encaje parcial', color:'#B07020', bg:'#FBF3E3',
-        texto:`El candidato cumple los umbrales técnicos del rol, pero su perfil natural (${perfil.emoji} ${perfil.label}) no es el más típico para este puesto. Puede funcionar con adaptación.` };
+        texto:`Cumple los umbrales de ${levelLabel} para ${rolBuscado}, pero el perfil natural (${perfil.emoji} ${perfil.label}) no es el más típico. Puede funcionar con adaptación.` };
     } else if (critFail === 1) {
       const gap = rows.find(r => r.weight === 'crítico' && !r.ok);
       encaje = { nivel:'⚠ Encaje con reservas', color:'#B07020', bg:'#FBF3E3',
-        texto:`Falta reforzar un área crítica para este rol: ${gap.label} (tiene ${gap.val.toFixed(1)}, mínimo ${gap.min}). El resto del perfil es adecuado.` };
+        texto:`Para nivel ${levelLabel} en ${rolBuscado}, falta reforzar: ${gap.label} (${gap.val.toFixed(1)} / mín. ${gap.min} para ${levelLabel}). El resto del perfil es adecuado.` };
     } else {
       const gaps = rows.filter(r => r.weight === 'crítico' && !r.ok);
       encaje = { nivel:'✗ Encaje limitado', color:'#C94040', bg:'#FBE8E8',
-        texto:`El candidato no cumple ${critFail} requisito(s) crítico(s) para este rol: ${gaps.map(g=>g.label).join(', ')}. Perfil del candidato: ${perfil.emoji} ${perfil.label}.` };
+        texto:`No cumple ${critFail} requisito(s) crítico(s) para ${levelLabel} en ${rolBuscado}: ${gaps.map(g=>`${g.label} (${g.val.toFixed(1)} / mín. ${g.min})`).join(', ')}. Perfil: ${perfil.emoji} ${perfil.label}.` };
     }
-    comparativa = { rows, encaje, rolBuscado };
+    comparativa = { rows, encaje, rolBuscado, nivelKey, levelLabel };
   }
 
   // ── RIESGO ────────────────────────────────────────────────────────────────
@@ -2669,7 +2767,9 @@ function renderComparativa(d) {
   body.innerHTML = `
     ${rowsHTML}
     <div class="encaje-card" style="background:${encaje.bg};border-color:${encaje.color}">
-      <div class="encaje-title" style="color:${encaje.color}">${encaje.nivel}</div>
+      <div class="encaje-title" style="color:${encaje.color}">${encaje.nivel}
+        ${d.comparativa.levelLabel ? `<span style="font-size:10px;font-weight:400;opacity:0.7;margin-left:8px">para nivel ${d.comparativa.levelLabel}</span>` : ''}
+      </div>
       <div class="encaje-text">${encaje.texto}</div>
     </div>`;
 }
@@ -2864,6 +2964,7 @@ function updateSummary() {
   }
 
   updateRadar(data.scores);
+  renderSoftCards(data.scores);
   updateDiagnosis();
 }
 
