@@ -3349,11 +3349,22 @@ function exportTXT() {
   txt += `\nSCORE TOTAL: ${ts > 0 ? ts.toFixed(2) : '—'} → ${nivel}\n\n`;
   [...BLOCKS, ...SOFT_BLOCKS, ...LEAD_BLOCKS].forEach(b => {
     const bs = blockScore(b, data.scores);
-    txt += `${b.label.toUpperCase()} (peso ${Math.round(b.weight*100)}%)  ·  Score: ${bs > 0 ? bs.toFixed(1) : '—'}\n`;
+    txt += `${b.label.toUpperCase()} (peso ${Math.round((b.weight||0)*100)}%)  ·  Score: ${bs > 0 ? bs.toFixed(1) : '—'}\n`;
     b.skills.forEach(s => {
       const v = data.scores[s.id] || 0;
-      const g = v > 0 ? s.guide[v] : null;
-      txt += `  ${s.name}: ${v > 0 ? v + '/5 – ' + g.label : '—'}\n`;
+      // Safely get label from either guide format
+      let levelLabel = '';
+      if (v > 0 && s.guide) {
+        const firstKey = Object.keys(s.guide)[0];
+        const isFormatA = Array.isArray((s.guide[firstKey]||{}).q);
+        if (isFormatA) {
+          levelLabel = (s.guide[v]||{}).label || '';
+        } else {
+          const ak = v <= 3 ? 2 : v <= 6 ? 5 : 8;
+          levelLabel = (s.guide[ak]||{}).label || '';
+        }
+      }
+      txt += `  ${s.name}: ${v > 0 ? v + '/10' + (levelLabel ? ' – ' + levelLabel : '') : '—'}\n`;
     });
     txt += '\n';
   });
