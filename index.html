@@ -2457,29 +2457,103 @@ function diagnose(data) {
       .sort((a,b) => a.score - b.score).slice(0,3);
   }
 
-  // ── RECOMENDACIÓN ─────────────────────────────────────────────────────────
-  let rec = '';
-  const nivelOK = objIdx > 0 ? nivelIdx >= objIdx : true;
-  if (nivel === 'Muy inicial') {
-    rec = 'El candidato no cumple los requisitos mínimos de nivel Junior. Falta base en skills críticas. No recomendado para incorporación inmediata.';
-  } else if (encaje) {
-    // Rol buscado selected — use encaje as primary signal
-    if (encaje.nivel.startsWith('✓')) {
-      rec = nivelOK
-        ? `Recomendado. ${encaje.texto} Nivel: ${nivel}.`
-        : `Perfil adecuado para el rol, pero nivel (${nivel}) por debajo del objetivo (${data.meta.nivelObj}). Valorar con plan de desarrollo.`;
-    } else if (encaje.nivel.startsWith('~')) {
-      rec = `${encaje.texto} Nivel: ${nivel}. Evaluar si la adaptación al rol compensa las diferencias de perfil.`;
-    } else if (encaje.nivel.startsWith('⚠')) {
-      rec = `${encaje.texto} ${nivelOK ? 'El nivel es adecuado.' : 'Además, el nivel (' + nivel + ') está por debajo del objetivo.'}`;
-    } else {
-      rec = `No recomendado para este rol. ${encaje.texto}`;
-    }
-  } else if (objIdx > 0 && nivelIdx < objIdx) {
-    rec = `Nivel ${nivel}, por debajo del objetivo ${data.meta.nivelObj}. Perfil: ${perfil.emoji} ${perfil.label}. ${gaps.length ? 'Gaps: ' + gaps.map(g=>g.name||g.label).join(', ') + '.' : ''} Apto con plan de desarrollo o para nivel inferior.`;
-  } else {
-    rec = `Nivel ${nivel}. Perfil: ${perfil.emoji} ${perfil.label}. ${riesgo === 'Bajo' ? 'Riesgo bajo.' : 'Revisar: ' + riesgoSub + '.'} ${top3.length ? 'Fortalezas: ' + top3.map(t=>t.name).join(', ') + '.' : ''}`;
+  // ── RECOMENDACIÓN ESPECÍFICA POR SKILL ───────────────────────────────────
+  // Builds a concrete, non-generic recommendation referencing actual skill names and scores
+
+  // Skill-level message builders
+  function skillRec(sid, score, skillName) {
+    const BAR = ['','muy bajo','muy bajo','inicial','inicial','sólido','sólido','avanzado','avanzado','excelente','excelente'];
+    const lvl = BAR[score] || '';
+    // Hard skill specific context
+    const SKILL_CONTEXT = {
+      d1:'razonamiento analítico', d2:'calidad del dato', d3:'Python/pipelines',
+      d4:'modelado de red', d5:'dato como producto',
+      e1:'operación de red', e2:'calidad de suministro', e3:'protecciones',
+      e4:'comunicaciones/SCADA', e5:'criterio técnico',
+      sr1:'modelo de negocio DSO', sr2:'retribución regulada', sr3:'normativa aplicada',
+      sr4:'sensibilidad regulatoria', sr5:'traducción técnico-negocio', sr6:'tendencias sectoriales',
+      m1:'estructuración de problemas', m2:'criterio y priorización',
+      m3:'comunicación con cliente', m4:'orientación a cliente', m5:'mentalidad de sistema',
+      s_com:'comunicación', s_prob:'entendimiento del problema', s_crit:'criterio',
+      s_pro:'proactividad', s_own:'ownership', s_col:'colaboración',
+      s_apr:'aprendizaje', s_inf:'influencia',
+      l_pri:'priorización', l_dev:'desarrollo de personas', l_coo:'coordinación', l_vis:'visión'
+    };
+    return `${skillName} (${score}/10 — ${lvl})`;
   }
+
+  function buildRec() {
+    const lines = [];
+    const sc2 = data.scores;
+
+    // 1. Nivel y veredicto principal
+    if (nivel === 'Muy inicial') {
+      lines.push('No cumple los requisitos mínimos de Junior. Falta base técnica y autonomía básica.');
+    } else if (encaje) {
+      if (encaje.nivel.startsWith('✓')) {
+        lines.push(nivelOK
+          ? `Recomendado como ${nivel} para el rol de ${data.meta.rolBuscado}.`
+          : `Perfil adecuado para ${data.meta.rolBuscado}, pero nivel estimado (${nivel}) por debajo del objetivo (${data.meta.nivelObj}). Valorar incorporación con plan de desarrollo.`);
+      } else if (encaje.nivel.startsWith('~')) {
+        lines.push(`Encaje parcial con ${data.meta.rolBuscado}. ${encaje.texto}`);
+      } else if (encaje.nivel.startsWith('⚠')) {
+        lines.push(`Encaje con reservas para ${data.meta.rolBuscado}. ${encaje.texto}`);
+      } else {
+        lines.push(`No recomendado para ${data.meta.rolBuscado}. ${encaje.texto}`);
+      }
+    } else if (objIdx > 0 && nivelIdx < objIdx) {
+      lines.push(`Nivel estimado ${nivel}, por debajo del objetivo ${data.meta.nivelObj}.`);
+    } else {
+      lines.push(`Nivel estimado: ${nivel}. ${perfil.emoji} ${perfil.label}.`);
+    }
+
+    // 2. Fortalezas concretas (top 3 con score)
+    if (top3.length) {
+      lines.push('Destacan: ' + top3.map(t => skillRec(t.id, t.score, t.name)).join(' · ') + '.');
+    }
+
+    // 3. Gaps concretos con score y qué significa
+    const allScored = [...BLOCKS, ...SOFT_BLOCKS, ...LEAD_BLOCKS]
+      .flatMap(b => b.skills.map(s => ({ id:s.id, name:s.name, score:sc2[s.id]||0 })))
+      .filter(s => s.score > 0);
+
+    // CEO blocking criteria — check with actual values
+    const blockingIssues = [];
+    if (nivel !== 'Muy inicial') {
+      const nivelTarget = data.meta.nivelObj || nivel;
+      if (['mid','senior','lead'].includes(nivelTarget.toLowerCase())) {
+        if ((sc2['s_own']||0) < 5) blockingIssues.push(`Ownership ${sc2['s_own']||0}/10 — necesario ≥5 para trabajar con autonomía`);
+        if ((sc2['s_crit']||0) < 5) blockingIssues.push(`Criterio ${sc2['s_crit']||0}/10 — necesario ≥5 para tomar decisiones`);
+        if ((sc2['s_prob']||0) < 5) blockingIssues.push(`Entendimiento del problema ${sc2['s_prob']||0}/10 — necesario ≥5 para autonomía`);
+      }
+      if (['senior','lead'].includes(nivelTarget.toLowerCase())) {
+        if ((sc2['s_com']||0) < 7) blockingIssues.push(`Comunicación ${sc2['s_com']||0}/10 — necesario ≥7 para nivel Senior`);
+        if ((sc2['s_crit']||0) < 7) blockingIssues.push(`Criterio ${sc2['s_crit']||0}/10 — necesario ≥7 para definir problemas de negocio`);
+        if ((sc2['s_inf']||0) < 6.5) blockingIssues.push(`Influencia ${sc2['s_inf']||0}/10 — necesario ≥6.5 para Senior`);
+      }
+    }
+    if (blockingIssues.length) {
+      lines.push('Criterios bloqueantes no cumplidos: ' + blockingIssues.join(' · ') + '.');
+    }
+
+    // 4. Skills bajas concretas (las 3 peores con score, si no son el top de los gaps ya)
+    const lowSkills = allScored
+      .filter(s => s.score <= 4 && !blockingIssues.some(b => b.startsWith(s.name)))
+      .sort((a,b) => a.score - b.score)
+      .slice(0, 3);
+    if (lowSkills.length) {
+      lines.push('A reforzar: ' + lowSkills.map(s => `${s.name} (${s.score}/10)`).join(', ') + '.');
+    }
+
+    // 5. Perfil note if relevant
+    if (!encaje && perfil.label !== 'Consultor equilibrado') {
+      lines.push(`Perfil: ${perfil.emoji} ${perfil.label}. ${perfil.desc}`);
+    }
+
+    return lines.join(' ');
+  }
+
+  const rec = buildRec();
 
   return { nivel, nivelSub, perfil, perfilId, perfilSub, riesgo, riesgoColor, riesgoSub,
            hardAvg, softAvg, leadAvg, top3, gaps, rec, comparativa, encaje };
@@ -2550,7 +2624,13 @@ function updateDiagnosis() {
   }
 
   // Recomendación
-  if ($('diag-rec-text')) $('diag-rec-text').textContent = d.rec;
+  if ($('diag-rec-text')) {
+    // Split into sentences for better readability
+    const sentences = d.rec.split(/(?<=\.) /).filter(Boolean);
+    $('diag-rec-text').innerHTML = sentences.length > 1
+      ? sentences.map((s, i) => `<span style="${i===0?'font-weight:600':'color:var(--text2)'}">${s}</span>`).join('<br style="margin-bottom:4px">')
+      : `<span style="font-weight:500">${d.rec}</span>`;
+  }
 }
 
 function renderComparativa(d) {
@@ -2694,51 +2774,93 @@ function updateSummary() {
   // ── Block breakdown bars ──
   const barsEl = document.getElementById('rs-block-bars');
   if (barsEl) {
-    barsEl.innerHTML = BLOCKS.map(b => {
-      const bs = blockScore(b, data.scores);
-      const skillsHtml = b.skills.map(s => {
-        const v = data.scores[s.id] || 0;
-        const pct = (v / 10 * 100).toFixed(1);
-        // Label from nearest anchor
-        const anchorKey = v <= 3 ? 2 : v <= 6 ? 5 : 8;
-        const anchorGuide = s.guide[anchorKey] || {};
-        const levelLabel = v > 0 ? (s.guide[v] ? s.guide[v].label : anchorGuide.label || '') : '—';
-        // 10-step color gradient red→green
-        const BAR_COLORS = ['#ddd','#C94040','#C96030','#B07020','#8A8010','#4A9020',
-                            '#2A9050','#2A7A7A','#2A5FA0','#207050','#1A5A40'];
-        const barColor = BAR_COLORS[v] || '#ddd';
-        const weightBadge = s.weight != null
-          ? `<span style="font-size:10px;color:var(--text3);margin-left:5px;font-family:'DM Mono',monospace">${s.weight}%</span>`
-          : '';
-        return `<div class="rs-skill-row">
-          <div class="rs-skill-name">${s.name}${weightBadge}</div>
-          <div class="rs-skill-track">
-            <div class="rs-skill-fill" style="width:${pct}%;background:${barColor}"></div>
-            <div class="rs-skill-ticks">${[...Array(9)].map(()=>'<div class="rs-skill-tick"></div>').join('')}<div class="rs-skill-tick"></div></div>
+    const BAR_COLORS = ['#ddd','#C94040','#C96030','#B07020','#8A8010','#4A9020',
+                        '#2A9050','#2A7A7A','#2A5FA0','#207050','#1A5A40'];
+
+    function renderBlockBars(blocks, showWeight) {
+      return blocks.map(b => {
+        const bs = blockScore(b, data.scores);
+        const hasScores = b.skills.some(s => (data.scores[s.id]||0) > 0);
+        const skillsHtml = b.skills.map(s => {
+          const v = data.scores[s.id] || 0;
+          const pct = (v / 10 * 100).toFixed(1);
+          // Label: hard skills use guide[v].label, soft use nearest anchor label
+          const isFormatA = s.guide && Array.isArray((s.guide[Object.keys(s.guide)[0]]||{}).q);
+          let levelLabel = '—';
+          if (v > 0) {
+            if (isFormatA) levelLabel = (s.guide[v]||{}).label || '';
+            else { const ak = v<=3?2:v<=6?5:8; levelLabel = (s.guide[ak]||{}).label || ''; }
+          }
+          const barColor = BAR_COLORS[v] || '#ddd';
+          const weightBadge = s.weight != null
+            ? `<span style="font-size:10px;color:var(--text3);margin-left:5px;font-family:'DM Mono',monospace">${s.weight}%</span>`
+            : '';
+          return `<div class="rs-skill-row">
+            <div class="rs-skill-name">${s.name}${weightBadge}</div>
+            <div class="rs-skill-track">
+              <div class="rs-skill-fill" style="width:${pct}%;background:${barColor}"></div>
+              <div class="rs-skill-ticks">${[...Array(9)].map(()=>'<div class="rs-skill-tick"></div>').join('')}<div class="rs-skill-tick"></div></div>
+            </div>
+            <div class="rs-skill-val" style="color:${v>0?barColor:'var(--text3)'}">${v>0 ? v+(levelLabel?' · '+levelLabel:'') : '—'}</div>
+          </div>`;
+        }).join('');
+
+        const scoreColor = !hasScores ? 'var(--text3)' :
+          bs<3.5?'#C94040':bs<5?'#B07020':bs<7?'#2A7A7A':bs<8.5?'#207050':'#1A5A40';
+        const scoreBg = !hasScores ? 'var(--surface2)' :
+          bs<3.5?'#FBE8E8':bs<5?'#FBF3E3':bs<7?'#E2F3F3':bs<8.5?'#E4F3EC':'#DCF0E6';
+        const weightLabel = showWeight
+          ? `<span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">peso ${Math.round(b.weight*100)}%</span>`
+          : `<span style="font-size:10px;color:var(--text3);font-weight:400">${b.skills.length} skills</span>`;
+
+        return `<div class="rs-block-section">
+          <div class="rs-block-header">
+            <div class="rs-block-name">
+              <span class="rs-block-dot" style="background:${b.hex}"></span>
+              <span style="color:${b.hex}">${b.label}</span>
+              ${weightLabel}
+            </div>
+            <div class="rs-block-score-pill" style="background:${scoreBg};color:${scoreColor};border-color:${scoreColor}30">
+              ${hasScores ? bs.toFixed(1)+' / 10' : '—'}
+            </div>
           </div>
-          <div class="rs-skill-val" style="color:${v>0?barColor:'var(--text3)'}">${v > 0 ? v + (levelLabel ? ' · ' + levelLabel : '') : '—'}</div>
+          ${skillsHtml}
         </div>`;
       }).join('');
+    }
 
-      const scoreColor = bs === 0 ? 'var(--text3)' :
-        bs < 3.5 ? '#C94040' : bs < 5 ? '#B07020' : bs < 7 ? '#2A7A7A' : bs < 8.5 ? '#207050' : '#1A5A40';
-      const scoreBg = bs === 0 ? 'var(--surface2)' :
-        bs < 3.5 ? '#FBE8E8' : bs < 5 ? '#FBF3E3' : bs < 7 ? '#E2F3F3' : bs < 8.5 ? '#E4F3EC' : '#DCF0E6';
+    const softHasScores = SOFT_BLOCKS.flatMap(b=>b.skills).some(s=>(data.scores[s.id]||0)>0);
+    const leadHasScores = LEAD_BLOCKS.flatMap(b=>b.skills).some(s=>(data.scores[s.id]||0)>0);
 
-      return `<div class="rs-block-section">
-        <div class="rs-block-header">
-          <div class="rs-block-name">
-            <span class="rs-block-dot" style="background:${b.hex}"></span>
-            <span style="color:${b.hex}">${b.label}</span>
-            <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">peso ${Math.round(b.weight*100)}%</span>
-          </div>
-          <div class="rs-block-score-pill" style="background:${scoreBg};color:${scoreColor};border-color:${scoreColor}30">
-            ${bs > 0 ? bs.toFixed(1) + ' / 10' : '—'}
-          </div>
+    barsEl.innerHTML =
+      // Hard skills
+      renderBlockBars(BLOCKS, true) +
+
+      // Soft skills separator + bars
+      `<div style="display:flex;align-items:center;gap:12px;margin:20px 0 14px">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;
+          color:var(--soft-color);display:flex;align-items:center;gap:6px">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--soft-color);display:inline-block"></span>
+          Soft Skills
+          ${softHasScores?'':'<span style="font-size:9px;font-weight:400;color:var(--text3)">(sin evaluar)</span>'}
         </div>
-        ${skillsHtml}
-      </div>`;
-    }).join('');
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>` +
+      renderBlockBars(SOFT_BLOCKS, false) +
+
+      // Leadership separator + bars (only if has scores or always show header)
+      `<div style="display:flex;align-items:center;gap:12px;margin:20px 0 14px">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;
+          color:var(--lead-color);display:flex;align-items:center;gap:6px">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--lead-color);display:inline-block"></span>
+          Leadership <span style="font-size:9px;font-weight:400;opacity:0.7">· opcional</span>
+          ${leadHasScores?'':'<span style="font-size:9px;font-weight:400;color:var(--text3)">(sin evaluar)</span>'}
+        </div>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>` +
+      renderBlockBars(LEAD_BLOCKS, false);
   }
 
   updateRadar(data.scores);
